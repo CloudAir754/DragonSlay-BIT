@@ -20,7 +20,7 @@ int irValues[6];  // 存储6个红外模块的检测值
 #define leftEcho 7
 #define rightEcho 8
 #define frontEcho 4
-float leftDistance = 0; //TODO 代表什么意思？
+float leftDistance = 0; 
 float rightDistance = 0;
 float frontDistance = 0;
 
