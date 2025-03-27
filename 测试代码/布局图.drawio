@@ -1,6 +1,6 @@
 <mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/26.0.16 Chrome/132.0.6834.196 Electron/34.2.0 Safari/537.36" version="26.0.16">
   <diagram name="第 1 页" id="yll1YtqcXRuo4OtLPVT-">
-    <mxGraphModel dx="12154" dy="7379" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="5854" dy="3653" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -240,13 +240,13 @@
         <mxCell id="BLXkQIzpylfFGTfIQC_p-54" value="开发板    舵机&#xa;PWM        9&#xa;&#xa;5V            5V&#xa; GND    GND" style="text;whiteSpace=wrap;fontSize=20;strokeColor=default;" parent="1" vertex="1">
           <mxGeometry x="-620" y="1360" width="170" height="160" as="geometry" />
         </mxCell>
-        <mxCell id="nRVoP_5kTN72gnJR6cyx-1" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=5;strokeColor=#FF2616;" edge="1" parent="1">
+        <mxCell id="nRVoP_5kTN72gnJR6cyx-1" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=5;strokeColor=#FF2616;" parent="1" edge="1">
           <mxGeometry width="50" height="50" relative="1" as="geometry">
             <mxPoint x="230" y="150" as="sourcePoint" />
             <mxPoint x="460" y="230" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="nRVoP_5kTN72gnJR6cyx-2" value="开发板    蓝牙模块&#xa;RX        TX&#xa;TX        RX&#xa;&#xa;5V            VCC&#xa; GND    GND" style="text;whiteSpace=wrap;fontSize=20;strokeColor=default;" vertex="1" parent="1">
+        <mxCell id="nRVoP_5kTN72gnJR6cyx-2" value="开发板    蓝牙模块&#xa;RX        TX&#xa;TX        RX&#xa;&#xa;5V            VCC&#xa; GND    GND" style="text;whiteSpace=wrap;fontSize=20;strokeColor=default;" parent="1" vertex="1">
           <mxGeometry x="610" y="210" width="180" height="170" as="geometry" />
         </mxCell>
       </root>
