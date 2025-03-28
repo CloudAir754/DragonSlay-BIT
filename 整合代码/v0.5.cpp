@@ -1,12 +1,7 @@
 /*
- * 智能小车主控程序 v0.4
+ * 智能小车主控程序 v0.5
  * 改进内容：
- * 1.删去错误的IR_THRESHOLD逻辑
- * 2.将Stop按钮，加入强制切换为任意情况停止（即按下后切入手动模式）
- * 3.梳理控制流
- * 4. 梳理手动的代码
- * 5. 增加不后退的转弯代码
- * 6. 删去乱的红外代码和雷达代码
+ * 1.解决雷达返回
  */
 
 #include <Servo.h> // 舵机控制库
@@ -151,7 +146,7 @@ void loop()
 
     delay(50); // 主循环延迟，降低CPU负载
     // 单位毫秒
-    // TO1DO A===【超参数】循环延迟，影响一次判断的周期长度
+    // TODO A===【超参数】循环延迟，影响一次判断的周期长度
 }
 
 /* ========== 蓝牙命令处理函数 ========== */
@@ -239,7 +234,7 @@ void handleBluetooth()
             {
                 myServo.write(0); // 转到0°
                 delay(500);       // 停顿500ms
-                // TO1DO A===【超参数】舵机开合时间+角度
+                // TODO A===【超参数】舵机开合时间+角度
                 myServo.write(90); // 回到90°
                 Serial.println(F("Servo moved to 0 and back to 90"));
             }
@@ -282,7 +277,7 @@ void infraredTracking()
     }
     Serial.println();
 
-    // TO1DO【函数】红外要单独写
+    // TODO【函数】红外要单独写
 }
 
 /* ========== 雷达避障功能函数 ========== */
@@ -309,7 +304,7 @@ void radarAvoidance()
     Serial.print(rightDistance);
     Serial.println("cm");
 
-    // TO1DO 【函数】雷达要改
+    // TODO 【函数】雷达要改
 }
 
 /* ========== 手动控制功能函数 ========== */
@@ -322,7 +317,7 @@ void manualControl()
 {
     // 根据速度标志设置PWM值
     // 增加低速的速度
-    // TO1DO  A===【超参数】 手动的高低速PWM
+    // TODO  A===【超参数】 手动的高低速PWM
     int speed = manualFastSpeed ? 255 : 180;
 
     // 根据当前手动状态控制电机
@@ -362,7 +357,7 @@ void manualControl()
  */
 float readDistance(int trigPin, int echoPin)
 {
-    // TO1DO 【函数】 返回的内容有可能因为上一次返回结果超时
+    // TODO 【函数】 返回的内容有可能因为上一次返回结果超时
     // 发送10微秒的触发脉冲
     digitalWrite(trigPin, LOW);
     delayMicroseconds(2);
@@ -382,6 +377,7 @@ float readDistance(int trigPin, int echoPin)
     float distance = duration * 0.01724; //
 
     return distance;
+    
 }
 
 /* ========== 电机控制函数 ========== */
