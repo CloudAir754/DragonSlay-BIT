@@ -1,61 +1,62 @@
-// 定义雷达引脚
-#define TrigLAD 3  // 雷达发射引脚
-#define leftEcho 7  // 左雷达回波引脚
-#define rightEcho 8 // 右雷达回波引脚
-#define frontEcho 4 // 前雷达回波引脚
+// 使用Arduino+sr04 进行雷达测距
+// 一共有三组雷达，分别是左3前2右1；端口为2-TG1；3-TG2；4-TG3；8-EC1；12-EC2；13 - EC3 
+// 定义超声波模块引脚
 
-// 存储雷达距离值
-float leftDistance = 0;   // 左雷达距离
-float rightDistance = 0;  // 右雷达距离
-float frontDistance = 0;  // 前雷达距离
+const int trigPinLeft = 4;
+const int trigPinFront = 3;
+const int trigPinRight = 2;
+
+const int echoPinLeft = 13;
+const int echoPinFront = 12;
+const int echoPinRight = 8;
 
 void setup() {
+  Serial.begin(9600); // 初始化串口通信
+  
   // 设置引脚模式
-  pinMode(TrigLAD, OUTPUT);   // 发射引脚为输出
-  pinMode(leftEcho, INPUT);   // 左雷达回波引脚为输入
-  pinMode(rightEcho, INPUT);  // 右雷达回波引脚为输入
-  pinMode(frontEcho, INPUT);  // 前雷达回波引脚为输入
-
-  // 初始化串口通信
-  Serial.begin(9600);
-  Serial.println("Radar distance testing started...");
+  pinMode(trigPinLeft, OUTPUT);
+  pinMode(echoPinLeft, INPUT);
+  pinMode(trigPinFront, OUTPUT);
+  pinMode(echoPinFront, INPUT);
+  pinMode(trigPinRight, OUTPUT);
+  pinMode(echoPinRight, INPUT);
+  
+  Serial.println("三向超声波雷达测距系统已启动");
 }
 
 void loop() {
-  // 读取左雷达距离
-  leftDistance = readDistance(TrigLAD, leftEcho);
-  // 读取前雷达距离
-  frontDistance = readDistance(TrigLAD, frontEcho);
-  // 读取右雷达距离
-  rightDistance = readDistance(TrigLAD, rightEcho);
-
-  // 输出雷达检测结果
-  Serial.print("Left Distance: ");
-  Serial.print(leftDistance);
-  Serial.print(" cm | Front Distance: ");
-  Serial.print(frontDistance);
-  Serial.print(" cm | Right Distance: ");
-  Serial.print(rightDistance);
+  // 测量三个方向的距离
+  float distanceLeft = getDistance(trigPinLeft, echoPinLeft);
+  float distanceFront = getDistance(trigPinFront, echoPinFront);
+  float distanceRight = getDistance(trigPinRight, echoPinRight);
+  
+  // 打印测量结果
+  Serial.print("左侧距离: ");
+  Serial.print(distanceLeft);
+  Serial.print(" cm | 前方距离: ");
+  Serial.print(distanceFront);
+  Serial.print(" cm | 右侧距离: ");
+  Serial.print(distanceRight);
   Serial.println(" cm");
-
-  delay(500); // 每隔500毫秒检测一次
+  
+  delay(200); // 适当延时
 }
 
-// 读取超声波雷达距离
-float readDistance(int trigPin, int echoPin) {
-  // 发送10微秒的触发信号
+// 超声波测距函数
+float getDistance(int trigPin, int echoPin) {
   digitalWrite(trigPin, LOW);
   delayMicroseconds(2);
   digitalWrite(trigPin, HIGH);
   delayMicroseconds(10);
   digitalWrite(trigPin, LOW);
-
-  // 读取回波时间
+  
   long duration = pulseIn(echoPin, HIGH);
-
-  // 计算距离（单位：厘米）
-  float distance = duration * 0.034 / 2;
-
-  // 返回距离值
+  float distance = duration * 0.034 / 2; // 计算距离(cm)
+  
+  // 过滤异常值
+  if(distance > 400 || distance < 2) {
+    distance = -1; // 表示超出测量范围
+  }
+  
   return distance;
 }

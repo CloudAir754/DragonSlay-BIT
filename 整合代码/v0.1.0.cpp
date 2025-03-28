@@ -1,12 +1,9 @@
 /*
- * 智能小车主控程序 v0.4
+ * 智能小车主控程序 v0.1.0
  * 改进内容：
- * 1.删去错误的IR_THRESHOLD逻辑
- * 2.将Stop按钮，加入强制切换为任意情况停止（即按下后切入手动模式）
- * 3.梳理控制流
- * 4. 梳理手动的代码
- * 5. 增加不后退的转弯代码
- * 6. 删去乱的红外代码和雷达代码
+ * 1. 改接线（去除l298n的ena/enb；改到雷达接线）
+ * 2. 解决雷达返回
+ * 3.！！！舵机因为TIMER冲突，直接改成v0.2.0
  */
 
 #include <Servo.h> // 舵机控制库
@@ -21,22 +18,23 @@
 #define IR_5 A4 // 右侧红外传感器
 #define IR_6 A5 // 最右侧红外传感器
 
-// 超声波雷达引脚（共用Trig，3个Echo）
-#define TrigLAD 3   // 超声波触发引脚（三个雷达共用）
-#define leftEcho 7  // 左侧雷达回波引脚
-#define rightEcho 8 // 右侧雷达回波引脚
-#define frontEcho 4 // 前方雷达回波引脚
+// 超声波雷达引脚（3个Trig，3个Echo）
+#define rightTrig  2 // 右雷达激发
+#define frontTrig 3 // 前雷达激发
+#define leftTrig 4  // 左雷达激发
 
-// 电机控制引脚
-#define leftMotor1 12  // 左侧电机方向控制1
-#define leftMotor2 13  // 左侧电机方向控制2
-#define rightMotor1 10 // 右侧电机方向控制1
-#define rightMotor2 11 // 右侧电机方向控制2
-#define leftPWM 5      // 左侧电机PWM速度控制
-#define rightPWM 6     // 右侧电机PWM速度控制
+#define rightEcho 8 // 右侧雷达回波引脚 1
+#define frontEcho 12 // 前方雷达回波引脚 2
+#define leftEcho 13  // 左侧雷达回波引脚 3
 
-// 舵机控制引脚
-#define SERVO_PIN 9 // 舵机信号引脚
+// 定义电机控制引脚
+#define IN1 5
+#define IN2 6
+#define IN3 9
+#define IN4 10
+
+// 舵机控制引脚 
+#define SERVO_PIN 11  // 舵机信号引脚
 
 /* ========== 全局变量定义 ========== */
 
@@ -75,6 +73,10 @@ enum ManualState
 ManualState manualState = MANUAL_STOP; // 手动控制状态
 bool manualFastSpeed = false;          // 手动控制速度标志（true为快速，false为慢速）
 
+#define StandardLowSpeed 80
+#define StandardHighSpeed 200
+
+
 /* ========== 初始化函数 ========== */
 /**
  * @brief 初始化硬件和系统设置
@@ -95,18 +97,19 @@ void setup()
     pinMode(IR_6, INPUT);
 
     // 初始化雷达模块引脚
-    pinMode(TrigLAD, OUTPUT);
+    pinMode(leftTrig, OUTPUT);
+    pinMode(frontTrig, OUTPUT);
+    pinMode(rightTrig, OUTPUT);
+
     pinMode(leftEcho, INPUT);
     pinMode(rightEcho, INPUT);
     pinMode(frontEcho, INPUT);
 
-    // 初始化电机控制引脚
-    pinMode(leftMotor1, OUTPUT);
-    pinMode(leftMotor2, OUTPUT);
-    pinMode(rightMotor1, OUTPUT);
-    pinMode(rightMotor2, OUTPUT);
-    pinMode(leftPWM, OUTPUT);
-    pinMode(rightPWM, OUTPUT);
+	// 设置电机控制引脚为输出
+	pinMode(IN1, OUTPUT);
+	pinMode(IN2, OUTPUT);
+	pinMode(IN3, OUTPUT);
+	pinMode(IN4, OUTPUT);
 
     // 初始化舵机
     myServo.attach(SERVO_PIN);
@@ -116,7 +119,7 @@ void setup()
     stopMotors();
 
     // 打印初始化信息
-    Serial.println(F("Smart Car System Initialized v0.3"));
+    Serial.println(F("Smart Car System Initialized v0.1.0"));
     printCurrentMode(); // 打印当前模式信息
 }
 
@@ -149,9 +152,7 @@ void loop()
         break;
     }
 
-    delay(50); // 主循环延迟，降低CPU负载
-    // 单位毫秒
-    // TO1DO A===【超参数】循环延迟，影响一次判断的周期长度
+    // 去掉该循环delay，将delay下放到执行过程
 }
 
 /* ========== 蓝牙命令处理函数 ========== */
@@ -239,7 +240,7 @@ void handleBluetooth()
             {
                 myServo.write(0); // 转到0°
                 delay(500);       // 停顿500ms
-                // TO1DO A===【超参数】舵机开合时间+角度
+                // TODO A===【超参数】舵机开合时间+角度
                 myServo.write(90); // 回到90°
                 Serial.println(F("Servo moved to 0 and back to 90"));
             }
@@ -258,7 +259,7 @@ void handleBluetooth()
  */
 void infraredTracking()
 {
-
+    // TODO 外循环Delay已改
     // 读取所有红外传感器模拟值
     irValues[0] = digitalRead(IR_1);
     irValues[1] = digitalRead(IR_2);
@@ -281,8 +282,9 @@ void infraredTracking()
         Serial.print(" ^ ");
     }
     Serial.println();
+    delay(30);  // 临时小工具
 
-    // TO1DO【函数】红外要单独写
+    // TODO【函数】红外要单独写
 }
 
 /* ========== 雷达避障功能函数 ========== */
@@ -294,11 +296,11 @@ void infraredTracking()
  */
 void radarAvoidance()
 {
-
+    // TODO 外循环Delay已改
     // 读取三个方向的障碍物距离
-    leftDistance = readDistance(TrigLAD, leftEcho);
-    frontDistance = readDistance(TrigLAD, frontEcho);
-    rightDistance = readDistance(TrigLAD, rightEcho);
+    leftDistance = readDistance(leftTrig, leftEcho);
+    frontDistance = readDistance(frontTrig, frontEcho);
+    rightDistance = readDistance(rightTrig, rightEcho);
 
     // 调试输出距离信息
     Serial.print("Distances - L:");
@@ -308,8 +310,7 @@ void radarAvoidance()
     Serial.print("cm R:");
     Serial.print(rightDistance);
     Serial.println("cm");
-
-    // TO1DO 【函数】雷达要改
+    delay(30);  // 临时小工具
 }
 
 /* ========== 手动控制功能函数 ========== */
@@ -322,8 +323,9 @@ void manualControl()
 {
     // 根据速度标志设置PWM值
     // 增加低速的速度
-    // TO1DO  A===【超参数】 手动的高低速PWM
-    int speed = manualFastSpeed ? 255 : 180;
+    // TODO 外循环Delay已改
+    // TODO  A===【超参数】 手动的高低速PWM
+    int speed = manualFastSpeed ? StandardHighSpeed : StandardLowSpeed;
 
     // 根据当前手动状态控制电机
     switch (manualState)
@@ -362,7 +364,7 @@ void manualControl()
  */
 float readDistance(int trigPin, int echoPin)
 {
-    // TO1DO 【函数】 返回的内容有可能因为上一次返回结果超时
+
     // 发送10微秒的触发脉冲
     digitalWrite(trigPin, LOW);
     delayMicroseconds(2);
@@ -375,7 +377,7 @@ float readDistance(int trigPin, int echoPin)
 
     if (duration == 0)
     {
-        return 150.0; // 测量范围是0~110+；若为150则认为无穷大
+        return -1.0; // 测量范围是0~110+；若为-1则认为无穷大
     }
 
     // 计算距离（声速340m/s，除以2因为是往返距离）
@@ -384,19 +386,17 @@ float readDistance(int trigPin, int echoPin)
     return distance;
 }
 
-/* ========== 电机控制函数 ========== */
+/* ========== 电机控制函数（默认一次30ms） ========== */
 /**
  * @brief 控制小车前进
  * @param speed PWM速度值（0-255）
  */
 void moveForward(int speed)
 {
-    digitalWrite(leftMotor1, HIGH);
-    digitalWrite(leftMotor2, LOW);
-    digitalWrite(rightMotor1, HIGH);
-    digitalWrite(rightMotor2, LOW);
-    analogWrite(leftPWM, speed);
-    analogWrite(rightPWM, speed);
+    motorControlState(speed,speed);
+
+    delay(30);
+    
 }
 
 /**
@@ -405,12 +405,11 @@ void moveForward(int speed)
  */
 void moveBackward(int speed)
 {
-    digitalWrite(leftMotor1, LOW);
-    digitalWrite(leftMotor2, HIGH);
-    digitalWrite(rightMotor1, LOW);
-    digitalWrite(rightMotor2, HIGH);
-    analogWrite(leftPWM, speed);
-    analogWrite(rightPWM, speed);
+
+    motorControlState(-speed,-speed);
+
+    delay(30);
+
 }
 
 /**
@@ -420,12 +419,10 @@ void moveBackward(int speed)
  */
 void turnLeft(int speed)
 {
-    digitalWrite(leftMotor1, LOW);
-    digitalWrite(leftMotor2, HIGH);
-    digitalWrite(rightMotor1, HIGH);
-    digitalWrite(rightMotor2, LOW);
-    analogWrite(leftPWM, speed);
-    analogWrite(rightPWM, speed);
+
+    motorControlState(-speed,speed);
+
+    delay(30);
 }
 
 /**
@@ -435,12 +432,10 @@ void turnLeft(int speed)
  */
 void turnRight(int speed)
 {
-    digitalWrite(leftMotor1, HIGH);
-    digitalWrite(leftMotor2, LOW);
-    digitalWrite(rightMotor1, LOW);
-    digitalWrite(rightMotor2, HIGH);
-    analogWrite(leftPWM, speed);
-    analogWrite(rightPWM, speed);
+
+    motorControlState(speed,-speed);
+    
+    delay(30);
 }
 
 /**
@@ -450,12 +445,10 @@ void turnRight(int speed)
  */
 void turnRightSmall(int speed)
 {
-    digitalWrite(leftMotor1, HIGH);
-    digitalWrite(leftMotor2, LOW);
-    digitalWrite(rightMotor1, LOW);
-    digitalWrite(rightMotor2, LOW);
-    analogWrite(leftPWM, speed);
-    analogWrite(rightPWM, 0);
+
+    motorControlState(speed,0);
+
+    delay(30);
 }
 
 /**
@@ -465,26 +458,78 @@ void turnRightSmall(int speed)
  */
 void turnLeftSmall(int speed)
 {
-    digitalWrite(leftMotor1, LOW);
-    digitalWrite(leftMotor2, LOW);
-    digitalWrite(rightMotor1, HIGH);
-    digitalWrite(rightMotor2, LOW);
-    analogWrite(leftPWM, 0);
-    analogWrite(rightPWM, speed);
+    
+    motorControlState(0,speed);
+    delay(30);
 }
 
 /**
  * @brief 停止所有电机
+ * 
  */
 void stopMotors()
 {
-    digitalWrite(leftMotor1, LOW);
-    digitalWrite(leftMotor2, LOW);
-    digitalWrite(rightMotor1, LOW);
-    digitalWrite(rightMotor2, LOW);
-    analogWrite(leftPWM, 0);
-    analogWrite(rightPWM, 0);
+    stopState();
+    delay(30);
 }
+
+/**
+ * @brief 停止所有电机【无延时】
+ */
+void stopState()
+{
+    motorControlState(0,0);
+    
+}
+
+
+
+// 电机控制状态函数
+/** 
+ * @param leftSpeed/rightSpeed PWM速度值（-255~-255）
+ */
+void motorControlState(int leftSpeed, int rightSpeed)
+{
+	// 限制速度范围
+	leftSpeed = constrain(leftSpeed, -255, 255);
+	rightSpeed = constrain(rightSpeed, -255, 255);
+
+	// 控制左轮（IN1/IN2）
+	if (leftSpeed > 0)
+	{
+		analogWrite(IN1, leftSpeed);
+		analogWrite(IN2, 0);
+	}
+	else if (leftSpeed < 0)
+	{
+		analogWrite(IN1, 0);
+		analogWrite(IN2, -leftSpeed);
+	}
+	else
+	{
+		digitalWrite(IN1, LOW);
+		digitalWrite(IN2, LOW);
+	}
+
+	// 控制右轮（IN3/IN4）
+	if (rightSpeed > 0)
+	{
+		analogWrite(IN3, rightSpeed);
+		analogWrite(IN4, 0);
+	}
+	else if (rightSpeed < 0)
+	{
+		analogWrite(IN3, 0);
+		analogWrite(IN4, -rightSpeed);
+	}
+	else
+	{
+		digitalWrite(IN3, LOW);
+		digitalWrite(IN4, LOW);
+	}
+}
+
+
 
 /* ========== 辅助函数 ========== */
 /**

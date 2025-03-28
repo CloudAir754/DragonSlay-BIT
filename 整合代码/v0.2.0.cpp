@@ -1,11 +1,8 @@
 /*
- * 智能小车主控程序 v0.3
+ * 智能小车主控程序 v0.1.0
  * 改进内容：
- * 1. 优化舵机控制逻辑（只在手动模式下可用，单次触发0°-90°动作）
- * 2. 红外检测改为模拟值读取，使用可调阈值
- * 3. 改进转弯逻辑，适应不同宽度黑线
- * 4. 修复雷达超距返回0的问题
- * 5. 添加更多调试信息
+ * 1. 改接线（去除l298n的ena/enb；改到雷达接线）
+ * 2. 解决雷达返回
  */
 
 #include <Servo.h> // 舵机控制库
@@ -20,25 +17,26 @@
 #define IR_5 A4 // 右侧红外传感器
 #define IR_6 A5 // 最右侧红外传感器
 
-// 超声波雷达引脚（共用Trig，3个Echo）
-#define TrigLAD 3   // 超声波触发引脚（三个雷达共用）
-#define leftEcho 7  // 左侧雷达回波引脚
-#define rightEcho 8 // 右侧雷达回波引脚
-#define frontEcho 4 // 前方雷达回波引脚
+// 超声波雷达引脚（3个Trig，3个Echo）
+#define rightTrig  2 // 右雷达激发
+#define frontTrig 3 // 前雷达激发
+#define leftTrig 4  // 左雷达激发
 
-// 电机控制引脚
-#define leftMotor1 12  // 左侧电机方向控制1
-#define leftMotor2 13  // 左侧电机方向控制2
-#define rightMotor1 10 // 右侧电机方向控制1
-#define rightMotor2 11 // 右侧电机方向控制2
-#define leftPWM 5      // 左侧电机PWM速度控制
-#define rightPWM 6     // 右侧电机PWM速度控制
+#define rightEcho 8 // 右侧雷达回波引脚 1
+#define frontEcho 12 // 前方雷达回波引脚 2
+#define leftEcho 13  // 左侧雷达回波引脚 3
 
-// 舵机控制引脚
-#define SERVO_PIN 9 // 舵机信号引脚
+// 定义电机控制引脚
+#define IN1 5
+#define IN2 6
+#define IN3 9
+#define IN4 10
+
+// 舵机控制引脚 
+#define SERVO_PIN 11  // 舵机信号引脚
 
 /* ========== 全局变量定义 ========== */
-int IR_THRESHOLD= 2; //TO1DO 去除这个
+
 // 红外传感器值存储数组
 int irValues[6]; // 索引0-5对应IR_1到IR_6
 
@@ -63,14 +61,20 @@ SystemMode currentMode = MODE_MANUAL_CONTROL; // 当前系统模式，默认为�
 // 手动控制模式下的运动状态
 enum ManualState
 {
-    MANUAL_STOP,     // 停止
-    MANUAL_FORWARD,  // 前进
-    MANUAL_BACKWARD, // 后退
-    MANUAL_LEFT,     // 左转
-    MANUAL_RIGHT     // 右转
+    MANUAL_STOP,       // 停止
+    MANUAL_FORWARD,    // 前进
+    MANUAL_BACKWARD,   // 后退
+    MANUAL_LEFT,       // 左转
+    MANUAL_RIGHT,      // 右转
+    MANUAL_LEFT_SMALL, // 小左转
+    MANUAL_RIGHT_SMALL // 小右转
 };
 ManualState manualState = MANUAL_STOP; // 手动控制状态
 bool manualFastSpeed = false;          // 手动控制速度标志（true为快速，false为慢速）
+
+#define StandardLowSpeed 80
+#define StandardHighSpeed 200
+
 
 /* ========== 初始化函数 ========== */
 /**
@@ -92,18 +96,19 @@ void setup()
     pinMode(IR_6, INPUT);
 
     // 初始化雷达模块引脚
-    pinMode(TrigLAD, OUTPUT);
+    pinMode(leftTrig, OUTPUT);
+    pinMode(frontTrig, OUTPUT);
+    pinMode(rightTrig, OUTPUT);
+
     pinMode(leftEcho, INPUT);
     pinMode(rightEcho, INPUT);
     pinMode(frontEcho, INPUT);
 
-    // 初始化电机控制引脚
-    pinMode(leftMotor1, OUTPUT);
-    pinMode(leftMotor2, OUTPUT);
-    pinMode(rightMotor1, OUTPUT);
-    pinMode(rightMotor2, OUTPUT);
-    pinMode(leftPWM, OUTPUT);
-    pinMode(rightPWM, OUTPUT);
+	// 设置电机控制引脚为输出
+	pinMode(IN1, OUTPUT);
+	pinMode(IN2, OUTPUT);
+	pinMode(IN3, OUTPUT);
+	pinMode(IN4, OUTPUT);
 
     // 初始化舵机
     myServo.attach(SERVO_PIN);
@@ -113,7 +118,7 @@ void setup()
     stopMotors();
 
     // 打印初始化信息
-    Serial.println(F("Smart Car System Initialized v0.3"));
+    Serial.println(F("Smart Car System Initialized v0.1.0"));
     printCurrentMode(); // 打印当前模式信息
 }
 
@@ -146,29 +151,19 @@ void loop()
         break;
     }
 
-    delay(50); // 主循环延迟，降低CPU负载
+    // 去掉该循环delay，将delay下放到执行过程
 }
 
 /* ========== 蓝牙命令处理函数 ========== */
 /**
  * @brief 处理来自蓝牙串口的命令
  * 支持模式切换和手动控制命令
- * 命令列表：
- * '1' - 切换到红外循迹模式
- * '2' - 切换到雷达避障模式
- * '3' - 切换到手动控制模式
- * 'F' - 手动前进
- * 'B' - 手动后退
- * 'L' - 手动左转
- * 'R' - 手动右转
- * 'S' - 手动停止
- * 'V' - 切换速度（快/慢）
- * 'X' - 舵机控制（0°-90°）
+ *
  */
 void handleBluetooth()
 {
-    //Serial.available() 是非阻塞的，返回缓冲区字节数
-    //  若未输入，则整个函数直接跳过
+    // Serial.available() 是非阻塞的，返回缓冲区字节数
+    //   若未输入，则整个函数直接跳过
     if (Serial.available())
     {
         char command = Serial.read();
@@ -213,22 +208,38 @@ void handleBluetooth()
             if (currentMode == MODE_MANUAL_CONTROL)
                 manualState = MANUAL_RIGHT;
             break;
+
+        case 'l': // 小左转
+            if (currentMode == MODE_MANUAL_CONTROL)
+                manualState = MANUAL_LEFT_SMALL;
+            break;
+        case 'r': // 小右转
+            if (currentMode == MODE_MANUAL_CONTROL)
+                manualState = MANUAL_RIGHT_SMALL;
+            break;
+
         case 'S': // 停止
             if (currentMode == MODE_MANUAL_CONTROL)
+            {
                 manualState = MANUAL_STOP;
+            }
+            else
+            {
+                currentMode = MODE_MANUAL_CONTROL;
+                manualState = MANUAL_STOP;
+            }
             break;
-        case 'V': // 速度切换(快/慢)
-            if (currentMode == MODE_MANUAL_CONTROL)
-                manualFastSpeed = !manualFastSpeed;
+        case 'V': // 速度切换(快/慢)    //改成在任意情况下都可以调速
+            manualFastSpeed = !manualFastSpeed;
             Serial.print(F("Speed changed to: "));
             Serial.println(manualFastSpeed ? "Fast" : "Slow");
             break;
         case 'X': // 舵机控制（0°-90°）
             if (currentMode == MODE_MANUAL_CONTROL)
             {
-                myServo.write(0);  // 转到0°
-                delay(500);        // 停顿500ms
-                // TO1DO 【超参数】舵机开合时间+角度
+                myServo.write(0); // 转到0°
+                delay(500);       // 停顿500ms
+                // TODO A===【超参数】舵机开合时间+角度
                 myServo.write(90); // 回到90°
                 Serial.println(F("Servo moved to 0 and back to 90"));
             }
@@ -243,10 +254,11 @@ void handleBluetooth()
  * 读取6路红外传感器值，根据检测到的黑线位置
  * 控制小车沿黑线行驶
  * 包含调试信息输出
+ *
  */
 void infraredTracking()
 {
-    
+    // TODO 外循环Delay已改
     // 读取所有红外传感器模拟值
     irValues[0] = digitalRead(IR_1);
     irValues[1] = digitalRead(IR_2);
@@ -262,55 +274,16 @@ void infraredTracking()
         Serial.print(irValues[i]);
         Serial.print(" ^ ");
     }
-    Serial.print(" === ");  //正中央
+    Serial.print(" === "); // 正中央
     for (int i = 3; i < 6; i++)
     {
         Serial.print(irValues[i]);
         Serial.print(" ^ ");
     }
     Serial.println();
+    delay(30);  // 临时小工具
 
-    // 计算左侧和右侧的检测强度
-    int leftSum = irValues[0] + irValues[1] + irValues[2];
-    int rightSum = irValues[3] + irValues[4] + irValues[5];
-
-    // 判断路线情况==黑1，白0
-    // TO1DO 【设计】 红外判定逻辑修改
-    // T 阈值有问题，应该是2或者3；回头看看有黑线是【0/1】
-    if (irValues[2] < IR_THRESHOLD && irValues[3] < IR_THRESHOLD)
-    {
-        // 情况1：中间两个传感器检测到黑线 - 直行
-        moveForward(150); // 中等速度直行
-    }
-    else if (leftSum < rightSum)
-    {
-        // 左侧检测到更多黑线 - 左转
-        if (leftSum < IR_THRESHOLD * 1.5)
-        { // 强左转信号
-            sharpTurnLeft();
-        }
-        else
-        {
-            turnLeft(200); // 普通左转
-        }
-    }
-    else if (rightSum < leftSum)
-    {
-        // 右侧检测到更多黑线 - 右转
-        if (rightSum < IR_THRESHOLD * 1.5)
-        { // 强右转信号
-            sharpTurnRight();
-        }
-        else
-        {
-            turnRight(200); // 普通右转
-        }
-    }
-    else
-    {
-        // 未检测到明确黑线 - 停止
-        stopMotors();
-    }
+    // TODO【函数】红外要单独写
 }
 
 /* ========== 雷达避障功能函数 ========== */
@@ -322,10 +295,11 @@ void infraredTracking()
  */
 void radarAvoidance()
 {
+    // TODO 外循环Delay已改
     // 读取三个方向的障碍物距离
-    leftDistance = readDistance(TrigLAD, leftEcho);
-    frontDistance = readDistance(TrigLAD, frontEcho);
-    rightDistance = readDistance(TrigLAD, rightEcho);
+    leftDistance = readDistance(leftTrig, leftEcho);
+    frontDistance = readDistance(frontTrig, frontEcho);
+    rightDistance = readDistance(rightTrig, rightEcho);
 
     // 调试输出距离信息
     Serial.print("Distances - L:");
@@ -335,50 +309,7 @@ void radarAvoidance()
     Serial.print("cm R:");
     Serial.print(rightDistance);
     Serial.println("cm");
-
-    // 避障决策逻辑
-    // TO1DO 避障逻辑需要细微逻辑
-    if (frontDistance < 20)
-    {
-        // 情况1：前方有障碍物（距离<20cm）
-        if (rightDistance > leftDistance && rightDistance > 30)
-        {
-            // 右侧空间较大 - 右转避开
-            turnRight(150);
-            delay(300); // 持续转弯一段时间
-        }
-        else if (leftDistance > 30)
-        {
-            // 左侧空间较大 - 左转避开
-            turnLeft(150);
-            delay(300); // 持续转弯一段时间
-        }
-        else
-        {
-            // 两侧空间都不足 - 后退
-            moveBackward(150);
-            delay(500); // 持续后退一段时间
-        }
-    }
-    else if (rightDistance < 15)
-    {
-        // 情况2：右侧距离太近（<15cm） - 稍向左调整
-        moveForward(150);
-        analogWrite(leftPWM, 100);  // 左侧轮子慢速
-        analogWrite(rightPWM, 200); // 右侧轮子快速
-    }
-    else if (rightDistance > 25)
-    {
-        // 情况3：右侧距离太远（>25cm） - 稍向右调整
-        moveForward(150);
-        analogWrite(leftPWM, 200);  // 左侧轮子快速
-        analogWrite(rightPWM, 100); // 右侧轮子慢速
-    }
-    else
-    {
-        // 情况4：正常情况 - 保持直行靠右走
-        moveForward(150);
-    }
+    delay(30);  // 临时小工具
 }
 
 /* ========== 手动控制功能函数 ========== */
@@ -390,7 +321,10 @@ void radarAvoidance()
 void manualControl()
 {
     // 根据速度标志设置PWM值
-    int speed = manualFastSpeed ? 255 : 150;
+    // 增加低速的速度
+    // TODO 外循环Delay已改
+    // TODO  A===【超参数】 手动的高低速PWM
+    int speed = manualFastSpeed ? StandardHighSpeed : StandardLowSpeed;
 
     // 根据当前手动状态控制电机
     switch (manualState)
@@ -410,6 +344,13 @@ void manualControl()
     case MANUAL_RIGHT:
         turnRight(speed);
         break;
+
+    case MANUAL_LEFT_SMALL:
+        turnLeftSmall(speed);
+        break;
+    case MANUAL_RIGHT_SMALL:
+        turnRightSmall(speed);
+        break;
     }
 }
 
@@ -418,10 +359,11 @@ void manualControl()
  * @brief 使用超声波传感器测量距离
  * @param trigPin 触发引脚
  * @param echoPin 回波引脚
- * @return float 测量到的距离（厘米），超距返回200.0
+ * @return float 测量到的距离（厘米），超距返回150.0
  */
 float readDistance(int trigPin, int echoPin)
 {
+
     // 发送10微秒的触发脉冲
     digitalWrite(trigPin, LOW);
     delayMicroseconds(2);
@@ -434,28 +376,26 @@ float readDistance(int trigPin, int echoPin)
 
     if (duration == 0)
     {
-        return 200.0; // 返回一个大数值表示超出测量范围
+        return -1.0; // 测量范围是0~110+；若为-1则认为无穷大
     }
 
     // 计算距离（声速340m/s，除以2因为是往返距离）
-    float distance = duration * 0.01724; // * 0.034 / 2;
+    float distance = duration * 0.01724; //
 
     return distance;
 }
 
-/* ========== 电机控制函数 ========== */
+/* ========== 电机控制函数（默认一次30ms） ========== */
 /**
  * @brief 控制小车前进
  * @param speed PWM速度值（0-255）
  */
 void moveForward(int speed)
 {
-    digitalWrite(leftMotor1, HIGH);
-    digitalWrite(leftMotor2, LOW);
-    digitalWrite(rightMotor1, HIGH);
-    digitalWrite(rightMotor2, LOW);
-    analogWrite(leftPWM, speed);
-    analogWrite(rightPWM, speed);
+    motorControlState(speed,speed);
+
+    delay(30);
+    
 }
 
 /**
@@ -464,12 +404,11 @@ void moveForward(int speed)
  */
 void moveBackward(int speed)
 {
-    digitalWrite(leftMotor1, LOW);
-    digitalWrite(leftMotor2, HIGH);
-    digitalWrite(rightMotor1, LOW);
-    digitalWrite(rightMotor2, HIGH);
-    analogWrite(leftPWM, speed);
-    analogWrite(rightPWM, speed);
+
+    motorControlState(-speed,-speed);
+
+    delay(30);
+
 }
 
 /**
@@ -479,12 +418,10 @@ void moveBackward(int speed)
  */
 void turnLeft(int speed)
 {
-    digitalWrite(leftMotor1, LOW);
-    digitalWrite(leftMotor2, HIGH);
-    digitalWrite(rightMotor1, HIGH);
-    digitalWrite(rightMotor2, LOW);
-    analogWrite(leftPWM, speed);
-    analogWrite(rightPWM, speed);
+
+    motorControlState(-speed,speed);
+
+    delay(30);
 }
 
 /**
@@ -494,66 +431,104 @@ void turnLeft(int speed)
  */
 void turnRight(int speed)
 {
-    digitalWrite(leftMotor1, HIGH);
-    digitalWrite(leftMotor2, LOW);
-    digitalWrite(rightMotor1, LOW);
-    digitalWrite(rightMotor2, HIGH);
-    analogWrite(leftPWM, speed);
-    analogWrite(rightPWM, speed);
+
+    motorControlState(speed,-speed);
+    
+    delay(30);
 }
 
 /**
- * @brief 执行急左转动作
- * 先快速左转300ms，然后继续左转直到中间传感器检测到黑线
+ * @brief 控制小车右转但不后退
+ * @param speed PWM速度值（0-255）
+ * 左侧电机正转，右侧电机停
  */
-void sharpTurnLeft()
+void turnRightSmall(int speed)
 {
-    // TO1DO 【设计】急左转
-    // 第一阶段：快速左转
-    turnLeft(255);
-    delay(300);
 
-    // 第二阶段：继续左转直到中间传感器检测到黑线
-    // TO1DO 使用了亮度阈值
-    while (analogRead(IR_3) > IR_THRESHOLD)
-    {
-        turnLeft(200);
-        delay(10);
-    }
+    motorControlState(speed,0);
+
+    delay(30);
 }
 
 /**
- * @brief 执行急右转动作
- * 先快速右转300ms，然后继续右转直到中间传感器检测到黑线
+ * @brief 控制小车左转但不后退
+ * @param speed PWM速度值（0-255）
+ * 左侧电机停，右侧电机正转
  */
-void sharpTurnRight()
+void turnLeftSmall(int speed)
 {
-    // TO1DO 【设计】右左转
-    // 第一阶段：快速右转
-    turnRight(255);
-    delay(300);
-
-    // 第二阶段：继续右转直到中间传感器检测到黑线
-    // TO1DO 使用了亮度阈值
-    while (analogRead(IR_4) > IR_THRESHOLD)
-    {
-        turnRight(200);
-        delay(10);
-    }
+    
+    motorControlState(0,speed);
+    delay(30);
 }
 
 /**
  * @brief 停止所有电机
+ * 
  */
 void stopMotors()
 {
-    digitalWrite(leftMotor1, LOW);
-    digitalWrite(leftMotor2, LOW);
-    digitalWrite(rightMotor1, LOW);
-    digitalWrite(rightMotor2, LOW);
-    analogWrite(leftPWM, 0);
-    analogWrite(rightPWM, 0);
+    stopState();
+    delay(30);
 }
+
+/**
+ * @brief 停止所有电机【无延时】
+ */
+void stopState()
+{
+    motorControlState(0,0);
+    
+}
+
+
+
+// 电机控制状态函数
+/** 
+ * @param leftSpeed/rightSpeed PWM速度值（-255~-255）
+ */
+void motorControlState(int leftSpeed, int rightSpeed)
+{
+	// 限制速度范围
+	leftSpeed = constrain(leftSpeed, -255, 255);
+	rightSpeed = constrain(rightSpeed, -255, 255);
+
+	// 控制左轮（IN1/IN2）
+	if (leftSpeed > 0)
+	{
+		analogWrite(IN1, leftSpeed);
+		analogWrite(IN2, 0);
+	}
+	else if (leftSpeed < 0)
+	{
+		analogWrite(IN1, 0);
+		analogWrite(IN2, -leftSpeed);
+	}
+	else
+	{
+		digitalWrite(IN1, LOW);
+		digitalWrite(IN2, LOW);
+	}
+
+	// 控制右轮（IN3/IN4）
+	if (rightSpeed > 0)
+	{
+		analogWrite(IN3, rightSpeed);
+		analogWrite(IN4, 0);
+	}
+	else if (rightSpeed < 0)
+	{
+		analogWrite(IN3, 0);
+		analogWrite(IN4, -rightSpeed);
+	}
+	else
+	{
+		digitalWrite(IN3, LOW);
+		digitalWrite(IN4, LOW);
+	}
+}
+
+
 
 /* ========== 辅助函数 ========== */
 /**
@@ -578,5 +553,4 @@ void printCurrentMode()
 
     Serial.print(F("Current Mode: "));
     Serial.println(modeStr);
-
 }
