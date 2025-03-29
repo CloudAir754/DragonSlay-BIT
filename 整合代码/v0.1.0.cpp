@@ -240,7 +240,7 @@ void handleBluetooth()
             {
                 myServo.write(0); // 转到0°
                 delay(500);       // 停顿500ms
-                // TODO A===【超参数】舵机开合时间+角度
+                // TO1DO A===【超参数】舵机开合时间+角度
                 myServo.write(90); // 回到90°
                 Serial.println(F("Servo moved to 0 and back to 90"));
             }
@@ -259,7 +259,7 @@ void handleBluetooth()
  */
 void infraredTracking()
 {
-    // TODO 外循环Delay已改
+    // TO1DO 外循环Delay已改
     // 读取所有红外传感器模拟值
     irValues[0] = digitalRead(IR_1);
     irValues[1] = digitalRead(IR_2);
@@ -284,7 +284,7 @@ void infraredTracking()
     Serial.println();
     delay(30);  // 临时小工具
 
-    // TODO【函数】红外要单独写
+    // TO1DO【函数】红外要单独写
 }
 
 /* ========== 雷达避障功能函数 ========== */
@@ -296,7 +296,7 @@ void infraredTracking()
  */
 void radarAvoidance()
 {
-    // TODO 外循环Delay已改
+    // TO1DO 外循环Delay已改
     // 读取三个方向的障碍物距离
     leftDistance = readDistance(leftTrig, leftEcho);
     frontDistance = readDistance(frontTrig, frontEcho);
@@ -323,8 +323,8 @@ void manualControl()
 {
     // 根据速度标志设置PWM值
     // 增加低速的速度
-    // TODO 外循环Delay已改
-    // TODO  A===【超参数】 手动的高低速PWM
+    // TO1DO 外循环Delay已改
+    // TO1DO  A===【超参数】 手动的高低速PWM
     int speed = manualFastSpeed ? StandardHighSpeed : StandardLowSpeed;
 
     // 根据当前手动状态控制电机

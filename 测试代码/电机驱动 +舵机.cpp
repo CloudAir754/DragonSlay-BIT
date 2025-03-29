@@ -7,6 +7,16 @@
 #define IN3 3
 #define IN4 11
 
+#include <Servo.h>  // 引入Servo库
+
+// 定义舵机引脚
+#define SERVO_PIN 10
+// 创建舵机对象
+Servo myServo;
+
+// 定义舵机初始角度
+int angle = 0;  // 初始角度为0度
+
 // 定义速度等级
 #define HIGH_SPEED 200 // 高速 (PWM值 0-255)
 #define LOW_SPEED 80  // 低速
@@ -18,6 +28,8 @@ void setup()
 	pinMode(IN2, OUTPUT);
 	pinMode(IN3, OUTPUT);
 	pinMode(IN4, OUTPUT);
+
+	myServo.attach(SERVO_PIN);
 
 	// 初始化串口通信
 	Serial.begin(9600);

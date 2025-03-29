@@ -1,8 +1,10 @@
 /*
- * 智能小车主控程序 v0.1.0
+ * 智能小车主控程序 v0.2.0
+ * 此版本在手动模式下，传感器正常，马达和舵机正常
  * 改进内容：
  * 1. 改接线（去除l298n的ena/enb；改到雷达接线）
  * 2. 解决雷达返回
+ * 
  */
 
 #include <Servo.h> // 舵机控制库
@@ -19,7 +21,7 @@
 
 // 超声波雷达引脚（3个Trig，3个Echo）
 #define rightTrig  2 // 右雷达激发
-#define frontTrig 3 // 前雷达激发
+#define frontTrig 7 // 前雷达激发【改接线】
 #define leftTrig 4  // 左雷达激发
 
 #define rightEcho 8 // 右侧雷达回波引脚 1
@@ -29,11 +31,11 @@
 // 定义电机控制引脚
 #define IN1 5
 #define IN2 6
-#define IN3 9
-#define IN4 10
+#define IN3 3
+#define IN4 11 
 
-// 舵机控制引脚 
-#define SERVO_PIN 11  // 舵机信号引脚
+// 舵机控制引脚   
+#define SERVO_PIN 10  // 舵机信号引脚
 
 /* ========== 全局变量定义 ========== */
 

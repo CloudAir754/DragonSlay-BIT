@@ -1,6 +1,6 @@
 <mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/26.0.16 Chrome/132.0.6834.196 Electron/34.2.0 Safari/537.36" version="26.0.16">
   <diagram name="第 1 页" id="yll1YtqcXRuo4OtLPVT-">
-    <mxGraphModel dx="3269" dy="2124" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="3404" dy="2204" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -18,14 +18,8 @@
         </mxCell>
         <mxCell id="BLXkQIzpylfFGTfIQC_p-13" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=5;strokeColor=#B5739D;" parent="1" edge="1">
           <mxGeometry width="50" height="50" relative="1" as="geometry">
-            <mxPoint x="-59" y="-158.99999999999955" as="sourcePoint" />
-            <mxPoint x="-59" y="151.00000000000045" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="BLXkQIzpylfFGTfIQC_p-15" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=5;strokeColor=#B5739D;" parent="1" edge="1">
-          <mxGeometry width="50" height="50" relative="1" as="geometry">
-            <mxPoint x="-30" y="-159.99999999999955" as="sourcePoint" />
-            <mxPoint x="-30" y="150.00000000000045" as="targetPoint" />
+            <mxPoint x="-90" y="-159.99999999999955" as="sourcePoint" />
+            <mxPoint x="-90" y="150.00000000000045" as="targetPoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="BLXkQIzpylfFGTfIQC_p-17" value="·蓝牙收发模块" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
@@ -69,10 +63,10 @@
             <mxPoint x="40" y="-340" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="BLXkQIzpylfFGTfIQC_p-29" value="开发板    L298N&#xa;5          IN1&#xa;6          IN2&#xa;9         IN3&#xa;10         IN4   &#xa;&#xa; GND    GND" style="text;whiteSpace=wrap;fontSize=20;strokeColor=default;" parent="1" vertex="1">
+        <mxCell id="BLXkQIzpylfFGTfIQC_p-29" value="开发板    L298N&#xa;5          IN1&#xa;6          IN2&#xa;3         IN3&#xa;11         IN4   &#xa;&#xa; GND    GND" style="text;whiteSpace=wrap;fontSize=20;strokeColor=default;" parent="1" vertex="1">
           <mxGeometry x="-530" y="-340" width="180" height="230" as="geometry" />
         </mxCell>
-        <mxCell id="BLXkQIzpylfFGTfIQC_p-32" value="开发板   右中左&#xa;2             TG1&#xa;3             TG2&#xa;4             TG3&#xa;&#xa;8            EC1&#xa;12            EC2&#xa;13           EC3&#xa;&#xa; GND    GND&#xa;VCC        +5V" style="text;whiteSpace=wrap;fontSize=20;strokeColor=default;" parent="1" vertex="1">
+        <mxCell id="BLXkQIzpylfFGTfIQC_p-32" value="开发板   右中左&#xa;2             TG1&#xa;7             TG2&#xa;4             TG3&#xa;&#xa;8            EC1&#xa;12            EC2&#xa;13           EC3&#xa;&#xa; GND    GND&#xa;VCC        +5V" style="text;whiteSpace=wrap;fontSize=20;strokeColor=default;" parent="1" vertex="1">
           <mxGeometry x="730" y="-360" width="340" height="270" as="geometry" />
         </mxCell>
         <mxCell id="BLXkQIzpylfFGTfIQC_p-33" value="&lt;font style=&quot;color: rgb(255, 38, 22); font-size: 50px;&quot;&gt;记得增加隔板&lt;/font&gt;&lt;div&gt;&lt;font style=&quot;color: rgb(255, 38, 22); font-size: 50px;&quot;&gt;避免不同方向回波干扰&lt;/font&gt;&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;" parent="1" vertex="1">
@@ -144,20 +138,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="BLXkQIzpylfFGTfIQC_p-53" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=5;strokeColor=#67AB9F;" parent="1" edge="1">
-          <mxGeometry width="50" height="50" relative="1" as="geometry">
-            <mxPoint x="-960" y="1585" as="sourcePoint" />
-            <mxPoint x="-90" y="145" as="targetPoint" />
-            <Array as="points">
-              <mxPoint x="-60" y="1585" />
-              <mxPoint x="-60" y="975" />
-              <mxPoint x="410" y="975" />
-              <mxPoint x="410" y="335" />
-              <mxPoint x="-90" y="335" />
-            </Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="BLXkQIzpylfFGTfIQC_p-54" value="开发板    舵机&#xa;PWM        11                    &#xa;&#xa;5V            5V&#xa; GND    GND" style="text;whiteSpace=wrap;fontSize=20;strokeColor=default;" parent="1" vertex="1">
+        <mxCell id="BLXkQIzpylfFGTfIQC_p-54" value="开发板    舵机&#xa;PWM        10                    &#xa;&#xa;5V            5V&#xa; GND    GND" style="text;whiteSpace=wrap;fontSize=20;strokeColor=default;" parent="1" vertex="1">
           <mxGeometry x="-620" y="1360" width="170" height="160" as="geometry" />
         </mxCell>
         <mxCell id="nRVoP_5kTN72gnJR6cyx-1" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=5;strokeColor=#7EA6E0;" parent="1" edge="1">
@@ -258,11 +239,11 @@
         </mxCell>
         <mxCell id="c83uhSjy3CawVHzKG9Q0-18" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=5;strokeColor=#FFD966;" parent="1" edge="1">
           <mxGeometry width="50" height="50" relative="1" as="geometry">
-            <mxPoint x="170" y="150" as="sourcePoint" />
-            <mxPoint x="630" y="-220" as="targetPoint" />
+            <mxPoint x="50" y="150" as="sourcePoint" />
+            <mxPoint x="640" y="-220" as="targetPoint" />
             <Array as="points">
-              <mxPoint x="170" />
-              <mxPoint x="630" />
+              <mxPoint x="50" y="20" />
+              <mxPoint x="640" y="20" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -303,6 +284,35 @@
             <Array as="points">
               <mxPoint x="390" y="-110" />
               <mxPoint x="-150" y="-110" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="GhBcwY6mirLORExelAo1-2" value="" style="shape=image;html=1;verticalLabelPosition=bottom;verticalAlign=top;imageAspect=1;aspect=fixed;image=img/clipart/Gear_128x128.png" parent="1" vertex="1">
+          <mxGeometry x="-420" y="1420" width="52" height="61" as="geometry" />
+        </mxCell>
+        <mxCell id="BLXkQIzpylfFGTfIQC_p-15" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=5;strokeColor=#B5739D;jumpStyle=arc;" parent="1" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="-58" y="-149" as="sourcePoint" />
+            <mxPoint x="172" y="151.00000000000045" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="-58" y="1" />
+              <mxPoint x="172" y="1" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="GhBcwY6mirLORExelAo1-4" value="" style="shape=image;html=1;verticalLabelPosition=bottom;verticalAlign=top;imageAspect=1;aspect=fixed;image=img/clipart/Gear_128x128.png" parent="1" vertex="1">
+          <mxGeometry x="-600" y="-255.5" width="52" height="61" as="geometry" />
+        </mxCell>
+        <mxCell id="BLXkQIzpylfFGTfIQC_p-53" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=5;strokeColor=#67AB9F;jumpStyle=arc;" parent="1" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="-930" y="1590" as="sourcePoint" />
+            <mxPoint x="-60" y="150" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="-30" y="1590" />
+              <mxPoint x="-30" y="980" />
+              <mxPoint x="440" y="980" />
+              <mxPoint x="440" y="340" />
+              <mxPoint x="-60" y="340" />
             </Array>
           </mxGeometry>
         </mxCell>
