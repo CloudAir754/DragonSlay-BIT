@@ -1,13 +1,15 @@
 /*
- * 智能小车主控程序 v0.3.0
+ * 智能小车主控程序 v0.3.1
  *
  * 改进内容：
- * 1. 调整代码结构
+ * 1. 速度切换回到切两次
+ * 2. 修改手动运行代码，调超参数
+ * 
  *
  */
 
 // TODO 【版本信息】
-#define _VERSION_ "v0.3.0"
+#define _VERSION_ "v0.3.1"
 
 #include <Servo.h> // 舵机控制库
 
@@ -74,13 +76,15 @@ enum ManualState
 	MANUAL_RIGHT_SMALL // 小右转
 };
 ManualState manualState = MANUAL_STOP; // 手动控制状态
-int manualSpeed = 0;				   // 手动控制速度标志（0-低速短时；1-高速短时；2-低速长时；3-高速长时）
+bool manualSpeed = false;			   // 手动控制速度标志（f-低速短时；t-高速长时）
 
 // TODO 【调参】手动加速部分
-#define StandardLowSpeed 80	  // 低速pwm
-#define StandardHighSpeed 200 // 高速pwm
-#define LongTerm 80			  // 长时间行走delay
-#define ShortTerm 30		  // 短时间行走delay
+// 高速长时=10cm~
+// 低速短时=4cm~
+#define StandardLowSpeed 100  // 低速pwm
+#define StandardHighSpeed 170 // 高速pwm
+#define LongTerm 350		  // 长时间行走delay
+#define ShortTerm 200		  // 短时间行走delay
 
 #define DebugTime 500 // 用于调试时，每个循环进行等待
 
@@ -169,13 +173,11 @@ void handleBluetooth()
 		case '1': // 切换到红外循迹模式
 			currentMode = MODE_INFRARED_TRACKING;
 			stopMotors(100);
-			myServo.write(90); // 重置舵机位置
 			printCurrentMode();
 			break;
 		case '2': // 切换到雷达避障模式
 			currentMode = MODE_RADAR_AVOIDANCE;
 			stopMotors(100);
-			myServo.write(90); // 重置舵机位置
 			printCurrentMode();
 			break;
 		case '3': // 切换到手动控制模式
@@ -223,36 +225,22 @@ void handleBluetooth()
 			}
 			break;
 		case 'V':
-			// 速度切换（0-低速短时；1-高速短时；2-低速长时；3-高速长时）
-			manualSpeed++;
-			if (manualSpeed > 4)
-			{
-				manualSpeed = 0;
-			}
+			manualSpeed = !manualSpeed;
+
 			Serial.print(F("Speed changed to: "));
-			switch (manualSpeed)
-			{
-			case 0:
-				Serial.println(F("0-低速短时"));
-				break;
-			case 1:
-				Serial.println(F("1-高速短时"));
-				break;
-			case 2:
-				Serial.println(F("2-低速长时"));
-				break;
-			case 3:
-				Serial.println(F("3-高速长时"));
-				break;
-			}
+			if (!manualSpeed)
+				Serial.println(F("False-低速短时"));
+			else
+				Serial.println(F("True-高速长时"));
+
 			break;
 		case 'X': // 舵机控制（0°-90°）
 			if (currentMode == MODE_MANUAL_CONTROL)
 			{
-				myServo.write(0); // 转到0°
-				delay(500);		  // 停顿500ms
-				// TODO A===【超参数】舵机开合时间+角度
-				myServo.write(90); // 回到90°
+				myServo.write(20); // 转到0°
+				delay(300);		  // 停顿500ms
+
+				myServo.write(servoAngle); // 回到90°
 				Serial.println(F("Servo moved to 0 and back to 90"));
 			}
 			break;
@@ -325,20 +313,12 @@ void radarAvoidance()
 	// TODO 【函数=雷达】
 }
 
-/* ========== 手动控制功能函数 ========== */
-/**
- * @brief 手动控制模式主函数
- * 根据manualState和manualSpeed变量
- * 控制小车的运动和速度
- */
+// 手动控制功能函数
 void manualControl()
 {
-	// 根据速度标志设置PWM值
-	// 增加低速的速度
 
-	// TODO  A===【超参数】 手动的高低速PWM
 	int speed = manualSpeed ? StandardHighSpeed : StandardLowSpeed;
-	int time_use = 50;
+	int time_use = manualSpeed ? LongTerm : ShortTerm;
 
 	// 根据当前手动状态控制电机
 	switch (manualState)
@@ -431,7 +411,7 @@ void turnRight(int speed, int dalay_time)
 // 小右转
 void turnRightSmall(int speed, int dalay_time)
 {
-
+	speed = speed * 0.8;
 	motorControlState(speed, 0);
 	delay(dalay_time);
 	stopState();
@@ -440,7 +420,7 @@ void turnRightSmall(int speed, int dalay_time)
 // 小左转
 void turnLeftSmall(int speed, int dalay_time)
 {
-
+	speed = speed * 0.8;
 	motorControlState(0, speed);
 	delay(dalay_time);
 	stopState();
