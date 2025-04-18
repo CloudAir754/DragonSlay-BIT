@@ -253,14 +253,8 @@ void handleBluetooth()
  * 读取6路红外传感器值，根据检测到的黑线位置
  * 控制小车沿黑线行驶
  * 包含调试信息输出
- *
  */
-/**
- * @brief 红外循迹模式主函数
- * 读取6路红外传感器值，根据检测到的黑线位置
- * 控制小车沿黑线行驶
- * 包含调试信息输出
- */
+
 void infraredTracking()
 {
     // 读取所有红外传感器模拟值
@@ -435,6 +429,7 @@ void infraredTracking()
  * 根据障碍物距离做出避障决策
  * 包含调试信息输出和当前决策信息显示
  */
+// 先调整雷达；问题在于转弯太大了；建议转了之后往前走
 void radarAvoidance()
 {
     // 1. 读取传感器数据
@@ -456,23 +451,35 @@ void radarAvoidance()
     int Radartime_use[2] = {LongTerm, ShortTerm};              // 0高速，1低速
 
 	//TODO 【调参】雷达调优看这里
-    const int A_RADAR_LENGH = 30; // A探测限值；大于此值则认为有通道（转弯）
+    const int A_RADAR_LENGH = 50; // A探测限值；大于此值则认为有通道（转弯）
     const int B_FRONT_HOPE = 12;  // B前进期望；大于此值则可向前走
-    const int C_RIGHT_MIN = 8;    // C贴右最小值；小于此值则认为太靠右
+    const int C_RIGHT_MIN = 12;    // C贴右最小值；小于此值则认为太靠右
 
-    if (rightDistance > A_RADAR_LENGH)
+	if (frontDistance <= B_FRONT_HOPE)
+    {
+        /*
+        3. 【倒退】陷入困境，当前方距离小于等于 {B前进期望} 。
+        则前方撞墙：倒退一定距离。
+        慢速后退 * 2 大概6cm：*/
+        moveBackward(Radarspeed[1], Radartime_use[1]);
+        moveBackward(Radarspeed[1], Radartime_use[1]);
+        Serial.println("[调试]3. 【倒退】陷入困境，当前方距离小于等于 {B前进期望} ");
+    }else if (rightDistance > A_RADAR_LENGH)
     {
         /*
         1. 【右转】当右边大于 {A探测限值} 。
         则右边有通道：先向前（可以撞墙），再右转，再向前走。
-        低速前进 * 3，高速右转 * 1，高速前进 * 2；
+        低速前进 * 3，低速右转 * 2，高速前进 * 2；
         */
-        moveForward(Radarspeed[1], Radartime_use[1]);
-        moveForward(Radarspeed[1], Radartime_use[1]);
-        moveForward(Radarspeed[1], Radartime_use[1]);
-        turnRight(Radarspeed[0], Radartime_use[0]);
-        moveForward(Radarspeed[0], Radartime_use[0]);
-        moveForward(Radarspeed[0], Radartime_use[0]);
+        // moveForward(Radarspeed[1], Radartime_use[1]);
+		// turnRight(Radarspeed[1], Radartime_use[1]);
+		// moveBackward(Radarspeed[1], Radartime_use[1]);
+		// turnRight(Radarspeed[1], Radartime_use[1]);
+        // moveForward(Radarspeed[1], Radartime_use[1]);
+        // moveForward(Radarspeed[1], Radartime_use[1]);
+		// moveForward(Radarspeed[1], Radartime_use[1]);
+        // moveForward(Radarspeed[1], Radartime_use[1]);
+        
         Serial.println("[调试]1. 【右转】当右边大于 {A探测限值} ");
     }
     else if (leftDistance > A_RADAR_LENGH)
@@ -483,22 +490,19 @@ void radarAvoidance()
         低速前进 * 3，慢速左转 * 2，高速前进 * 2；
         */
         moveForward(Radarspeed[1], Radartime_use[1]);
+		turnLeft(Radarspeed[1], Radartime_use[1]);
+		moveBackward(Radarspeed[1], Radartime_use[1]);
+		turnLeft(Radarspeed[1], Radartime_use[1]);
         moveForward(Radarspeed[1], Radartime_use[1]);
-        moveForward(Radarspeed[1], Radartime_use[1]);
-        turnLeft(Radarspeed[0], Radartime_use[0]);
+		turnRightSmall(Radarspeed[1],Radartime_use[1]);
+		moveForward(Radarspeed[1], Radartime_use[1]);
+		turnLeftSmall(Radarspeed[0], Radartime_use[0]);
+		moveForward(Radarspeed[0], Radartime_use[0]);
         moveForward(Radarspeed[0], Radartime_use[0]);
-        moveForward(Radarspeed[0], Radartime_use[0]);
+        moveForward(Radarspeed[0], Radartime_use[0]);       
+		moveForward(Radarspeed[0], Radartime_use[0]);
+
         Serial.println("[调试]2. 【左转】当左边大于 {A探测限值} ");
-    }
-    else if (frontDistance <= B_FRONT_HOPE)
-    {
-        /*
-        3. 【倒退】陷入困境，当前方距离小于等于 {B前进期望} 。
-        则前方撞墙：倒退一定距离。
-        慢速后退 * 2 大概6cm：*/
-        moveBackward(Radarspeed[1], Radartime_use[1]);
-        moveBackward(Radarspeed[1], Radartime_use[1]);
-        Serial.println("[调试]3. 【倒退】陷入困境，当前方距离小于等于 {B前进期望} ");
     }
     else if (rightDistance > leftDistance)
     {
