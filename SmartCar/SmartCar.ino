@@ -1,6 +1,6 @@
 /*
  * 智能小车主控程序 v0.3.2
- *
+ * 🚗💨
  * 改进内容：
  * 1. 雷达循迹
  * 
@@ -295,10 +295,7 @@ void infraredTracking()
 void radarAvoidance()
 {
     // 1. 读取传感器数据
-    // TODO 需要注释掉
-    // float leftDistance = 1;  // readDistance(leftTrig, leftEcho);
-    // float frontDistance = 1; // readDistance(frontTrig, frontEcho);
-    // float rightDistance = 1; // readDistance(rightTrig, rightEcho);
+
 	leftDistance = readDistance(leftTrig, leftEcho);
     frontDistance = readDistance(frontTrig, frontEcho);
     rightDistance =  readDistance(rightTrig, rightEcho);
@@ -312,11 +309,10 @@ void radarAvoidance()
     Serial.print(rightDistance);
     Serial.println("cm");
 
-    //int StandardHighSpeed, StandardLowSpeed, LongTerm, ShortTerm = 1; // TODO 需要注释掉
-
     int Radarspeed[2] = {StandardHighSpeed, StandardLowSpeed}; // 0高速，1低速
     int Radartime_use[2] = {LongTerm, ShortTerm};              // 0高速，1低速
 
+	//TODO 【调参】雷达调优看这里
     const int A_RADAR_LENGH = 30; // A探测限值；大于此值则认为有通道（转弯）
     const int B_FRONT_HOPE = 12;  // B前进期望；大于此值则可向前走
     const int C_RIGHT_MIN = 8;    // C贴右最小值；小于此值则认为太靠右

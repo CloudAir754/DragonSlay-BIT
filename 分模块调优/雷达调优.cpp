@@ -1,10 +1,9 @@
 void radarAvoidance()
 {
     // 1. 读取传感器数据
-    // TODO 需要注释掉
-    float leftDistance = 1;  // readDistance(leftTrig, leftEcho);
-    float frontDistance = 1; // readDistance(frontTrig, frontEcho);
-    float rightDistance = 1; // readDistance(rightTrig, rightEcho);
+    leftDistance =  readDistance(leftTrig, leftEcho);
+    frontDistance = readDistance(frontTrig, frontEcho);
+    rightDistance = readDistance(rightTrig, rightEcho);
 
     // 2. 输出传感器数据和当前状态
     Serial.print("[传感器数据] 左:");
@@ -15,7 +14,7 @@ void radarAvoidance()
     Serial.print(rightDistance);
     Serial.println("cm");
 
-    int StandardHighSpeed, StandardLowSpeed, LongTerm, ShortTerm = 1; // TODO 需要注释掉
+    // int StandardHighSpeed, StandardLowSpeed, LongTerm, ShortTerm = 1; //需要注释掉
 
     int Radarspeed[2] = {StandardHighSpeed, StandardLowSpeed}; // 0高速，1低速
     int Radartime_use[2] = {LongTerm, ShortTerm};              // 0高速，1低速
