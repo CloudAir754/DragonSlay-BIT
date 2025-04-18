@@ -85,7 +85,8 @@ bool manualSpeed = false;			   // 手动控制速度标志（f-低速短时；t-
 #define LongTerm 350		  // 长时间行走delay
 #define ShortTerm 200		  // 短时间行走delay
 
-#define DebugTime 700 // 用于调试时，每个循环进行等待
+#define DebugTime 050 // 用于调试时，每个循环进行等待
+
 
 // 初始化函数
 void setup()
@@ -282,7 +283,7 @@ void infraredTracking()
 
 	// 定义速度参数
 	// TODO 速度参数得调小；也要考虑过坡的动力要求
-	const int baseSpeed = 100; // 基础速度
+	const int baseSpeed = 180; // 基础速度
 	const int baseTime = 150;  // 基础时间
 	const int maxSpeed = 240;  // 最大速度
 	const int pidTime = 50;	   // PID一次进行的时间
