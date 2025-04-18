@@ -85,7 +85,7 @@ bool manualSpeed = false;			   // 手动控制速度标志（f-低速短时；t-
 #define LongTerm 350		  // 长时间行走delay
 #define ShortTerm 200		  // 短时间行走delay
 
-#define DebugTime 1500 // 用于调试时，每个循环进行等待
+#define DebugTime 700 // 用于调试时，每个循环进行等待
 
 // 初始化函数
 void setup()
@@ -282,10 +282,10 @@ void infraredTracking()
 
 	// 定义速度参数
 	// TODO 速度参数得调小；也要考虑过坡的动力要求
-	const int baseSpeed = 150; // 基础速度
+	const int baseSpeed = 100; // 基础速度
 	const int baseTime = 150;  // 基础时间
-	const int maxSpeed = 200;  // 最大速度
-	const int pidTime = 120;   // PID一次进行的时间
+	const int maxSpeed = 240;  // 最大速度
+	const int pidTime = 50;   // PID一次进行的时间
 
 	const int correctionSpeed = 120; // 修正速度(20~30°)
 	const int correctionTime = 120;	 // 修正时长
@@ -294,7 +294,7 @@ void infraredTracking()
 	const int turnTime = 180;
 
 	// 定义传感器权重
-	const int weights[6] = {-20, -10, -5, 5, 10, 20}; // 各传感器的权重值
+	const int weights[6] = {-40, -20, -5, 5, 20,40}; // 各传感器的权重值
 
 	// 计算偏差值
 	int error = 0;
@@ -321,9 +321,11 @@ void infraredTracking()
 		searchState = 0;
 	}
 
+	// 跳过这个兜底条件
 	// 处理不同情况
-	if (activeSensors == 0)
+	if (activeSensors == 0 && false)
 	{
+		
 		//  没有检测到任何黑线，左右摆，一波测试效果之后，再后退
 		if (searchState == 0)
 		{
@@ -368,7 +370,7 @@ void infraredTracking()
 		return; // 退出函数，不执行后续循迹逻辑
 	}
 
-	if (irValues[0] == 1 || (irValues[1] == 1 && irValues[2] == 1))
+	if ((irValues[0] == 1 || (irValues[1] == 1 && irValues[2] == 1))&& false)
 	{
 		// 检测到左侧传感器，可能是直角或锐角左转
 		Serial.println("Sharp left turn detected");
@@ -376,7 +378,7 @@ void infraredTracking()
 		lastError = 0;
 		integral = 0;
 	}
-	else if (irValues[5] == 1 || (irValues[4] == 1 && irValues[3] == 1))
+	else if ((irValues[5] == 1 || (irValues[4] == 1 && irValues[3] == 1))&& false)
 	{
 		// 检测到右侧传感器，可能是直角或锐角右转
 		Serial.println("Sharp right turn detected");
@@ -387,9 +389,9 @@ void infraredTracking()
 	else
 	{
 		// 正常循迹情况，使用PID控制
-		float kp = 0.6; // 比例系数；响应当前误差，过高导致振荡
+		float kp = 0.9; // 比例系数；响应当前误差，过高导致振荡
 		float ki = 0.1; // 积分系数；累计历史误差，调高可以避免偏向一侧
-		float kd = 0.3; // 微分系数；误差变化率，增大会减小超调变笨拙
+		float kd = 0; // 微分系数；误差变化率，增大会减小超调变笨拙
 
 		// 计算PID值
 		integral += error;
