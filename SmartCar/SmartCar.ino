@@ -519,6 +519,7 @@ void radarAvoidance()
 		*/
 		turnRightSmall(Radarspeed[1], Radartime_use[1]);
 		moveForward(Radarspeed[0], Radartime_use[0]);
+		turnLeftSmall(Radarspeed[1], Radartime_use[1]);
 		Serial.println("[调试]4. 【直行前进不够右】当 右侧距离大于 左侧距离 ");
 	}
 	else if (rightDistance < C_RIGHT_MIN)
@@ -529,7 +530,9 @@ void radarAvoidance()
 		慢小左 * 1，高速前进 * 1 ，慢小右*1
 		*/
 		turnLeftSmall(Radarspeed[1], Radartime_use[1]);
-		moveForward(Radarspeed[0], Radartime_use[0]);
+		turnLeftSmall(Radarspeed[1], Radartime_use[1]);
+		moveForward(Radarspeed[1], Radartime_use[1]);
+		turnRightSmall(Radarspeed[1], Radartime_use[1]);
 		turnRightSmall(Radarspeed[1], Radartime_use[1]);
 		Serial.println("[调试]5. 【直行前进太靠右】当 右侧距离小于 {C贴右最小值} ");
 	}
@@ -540,7 +543,7 @@ void radarAvoidance()
 		高速前进 * 2
 		*/
 		moveForward(Radarspeed[0], Radartime_use[0]);
-		moveForward(Radarspeed[0], Radartime_use[0]);
+		//moveForward(Radarspeed[0], Radartime_use[0]);
 		Serial.println("[调试]6. 【直行前进】 可以前进");
 	}
 }
