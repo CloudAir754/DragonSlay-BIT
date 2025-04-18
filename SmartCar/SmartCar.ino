@@ -1,14 +1,12 @@
 /*
- * 智能小车主控程序 v0.3.3
+ * 智能小车主控程序 v0.4.1
  * 🚗💨
- * 改进内容：
- * 1. 雷达循迹
  *
  *
  */
 
 // TODO 【版本信息】
-#define _VERSION_ "v0.3.3"
+#define _VERSION_ "v0.4.1 "
 
 #include <Servo.h> // 舵机控制库
 
@@ -24,7 +22,7 @@
 
 // 超声波雷达引脚（3个Trig，3个Echo）
 #define rightTrig 2 // 右雷达激发
-#define frontTrig 7 // 前雷达激发【改接线】
+#define frontTrig 7 // 前雷达激发
 #define leftTrig 4	// 左雷达激发
 
 #define rightEcho 8	 // 右侧雷达回波引脚 1
@@ -77,7 +75,7 @@ enum ManualState
 ManualState manualState = MANUAL_STOP; // 手动控制状态
 bool manualSpeed = false;			   // 手动控制速度标志（f-低速短时；t-高速长时）
 
-// TODO 【调参】手动加速部分
+// 手动加速部分
 // 高速长时=10cm~
 // 低速短时=4cm~
 #define StandardLowSpeed 100  // 低速pwm
@@ -86,7 +84,6 @@ bool manualSpeed = false;			   // 手动控制速度标志（f-低速短时；t-
 #define ShortTerm 200		  // 短时间行走delay
 
 #define DebugTime 050 // 用于调试时，每个循环进行等待
-
 
 // 初始化函数
 void setup()
@@ -235,6 +232,7 @@ void handleBluetooth()
 
 			break;
 		case 'X': // 舵机控制（0°-90°）
+		// TODO 舵机控制需要参考球机的设置
 			if (currentMode == MODE_MANUAL_CONTROL)
 			{
 				myServo.write(20); // 转到0°
@@ -284,115 +282,54 @@ void infraredTracking()
 	// 定义速度参数
 	// TODO 速度参数得调小；也要考虑过坡的动力要求
 	const int baseSpeed = 180; // 基础速度
-	const int baseTime = 150;  // 基础时间
 	const int maxSpeed = 240;  // 最大速度
 	const int pidTime = 50;	   // PID一次进行的时间
 
-	const int correctionSpeed = 120; // 修正速度(20~30°)
-	const int correctionTime = 120;	 // 修正时长
-
-	const int turnSpeed = 180; // 转弯速度(直角弯）
-	const int turnTime = 180;
+	const int turnSpeed = 150; // 转弯速度(直角弯）
+	const int turnTime = 150;
 
 	// 定义传感器权重
-	const double weights[6] = {-0.8, -0.5, -0.2, 0.2, 0.5, 0.8}; // 各传感器的权重值
+	const double weights[6] = {-0.8, -0.6, -0.3, 0.3, 0.6, 0.8}; // 各传感器的权重值
 
 	// 计算偏差值
 	double error = 0;
-	double activeSensors = 0;
 
 	static double lastError = 0;
 	static double integral = 0;
 
 	for (int i = 0; i < 6; i++)
 	{
-		if (irValues[i] == 1) // 检测到黑线
+		if (irValues[i] ) // 检测到黑线
 		{
 			error += weights[i];
-			activeSensors++;
 		}
 	}
 
-	// 状态机控制变量（新增部分）
-	static int searchState = 0; // 0: 未搜索 1: 左转 2: 右转 3: 后退
 
-	// 检测到黑线时重置搜索状态（新增关键逻辑）
-	if (activeSensors > 0)
+	if (irValues[0] && irValues[1])
 	{
-		searchState = 0;
-	}
-
-	// 跳过这个兜底条件
-	// 处理不同情况
-	if (activeSensors == 0 && false)
-	{
-
-		//  没有检测到任何黑线，左右摆，一波测试效果之后，再后退
-		if (searchState == 0)
-		{
-			// 开始搜索序列
-			searchState = 1;
-			Serial.println("No line - Searching left");
-			turnLeft(correctionSpeed, correctionTime);
-		}
-		else
-		{
-
-			switch (searchState)
-			{
-			case 1:
-
-				searchState = 2;
-
-				Serial.println("No line - Searching right");
-				turnRight(correctionSpeed, correctionTime); // 回正
-				turnRight(correctionSpeed, correctionTime); // 右转
-
-				break;
-
-			case 2: // 后退阶段
-				searchState = 3;
-				Serial.println("No line - Moving backward");
-				turnLeft(correctionSpeed, correctionTime);	   // 回正
-				moveBackward(correctionSpeed, correctionTime); // 后退第一次
-				break;
-
-			case 3: // 再后退阶段
-				searchState = 0;
-				Serial.println("No line - Moving backward");
-				moveBackward(correctionSpeed, correctionTime); // 后退第二次
-				break;
-			}
-		}
-		lastError = 0;
-		integral = 0;
-		delay(100);
-		Serial.println("完成一次意外调整");
-		return; // 退出函数，不执行后续循迹逻辑
-	}
-
-	if ((irValues[0] == 1 || (irValues[1] == 1 && irValues[2] == 1)) && false)
-	{
-		// 检测到左侧传感器，可能是直角或锐角左转
+		// 检测到最左侧两个传感器，可能是直角或锐角左转
 		Serial.println("Sharp left turn detected");
 		turnLeft(turnSpeed, turnTime);
+
 		lastError = 0;
 		integral = 0;
 	}
-	else if ((irValues[5] == 1 || (irValues[4] == 1 && irValues[3] == 1)) && false)
+	else if (irValues[5] && irValues[4])
 	{
 		// 检测到右侧传感器，可能是直角或锐角右转
 		Serial.println("Sharp right turn detected");
 		turnRight(turnSpeed, turnTime);
+
 		lastError = 0;
 		integral = 0;
 	}
 	else
 	{
 		// 正常循迹情况，使用PID控制
-		float kp = 0.9; // 比例系数；响应当前误差，过高导致振荡
-		float ki = 0.1; // 积分系数；累计历史误差，调高可以避免偏向一侧
-		float kd = 0;	// 微分系数；误差变化率，增大会减小超调变笨拙
+		float kp = 0.85; // 比例系数；响应当前误差，过高导致振荡
+		float ki = 0.1;	 // 积分系数；累计历史误差，调高可以避免偏向一侧
+		float kd = 0.05; // 微分系数；误差变化率，增大会减小超调变笨拙
 
 		// 计算PID值
 		integral += error;
@@ -420,7 +357,7 @@ void infraredTracking()
 		stopState();
 	}
 
-	delay(30); // 控制循环频率
+	delay(10); // 控制循环频率
 }
 
 /* ========== 雷达避障功能函数（靠右侧行驶） ========== */
@@ -430,7 +367,6 @@ void infraredTracking()
  * 根据障碍物距离做出避障决策
  * 包含调试信息输出和当前决策信息显示
  */
-// 先调整雷达；问题在于转弯太大了；建议转了之后往前走
 void radarAvoidance()
 {
 	// 1. 读取传感器数据
@@ -440,7 +376,7 @@ void radarAvoidance()
 	rightDistance = readDistance(rightTrig, rightEcho);
 
 	// 2. 输出传感器数据和当前状态
-	Serial.print("[传感器数据] 左:");
+	Serial.print("[雷达] 左:");
 	Serial.print(leftDistance);
 	Serial.print("cm 前:");
 	Serial.print(frontDistance);
@@ -451,7 +387,7 @@ void radarAvoidance()
 	int Radarspeed[2] = {StandardHighSpeed, StandardLowSpeed}; // 0高速，1低速
 	int Radartime_use[2] = {LongTerm, ShortTerm};			   // 0高速，1低速
 
-	// TODO 【调参】雷达调优看这里
+	// 【调参】雷达调优看这里
 	const int A_RADAR_LENGH = 50; // A探测限值；大于此值则认为有通道（转弯）
 	const int B_FRONT_HOPE = 12;  // B前进期望；大于此值则可向前走
 	const int C_RIGHT_MIN = 12;	  // C贴右最小值；小于此值则认为太靠右
@@ -471,7 +407,9 @@ void radarAvoidance()
 		/*
 		1. 【右转】当右边大于 {A探测限值} 。
 		则右边有通道：先向前（可以撞墙），再右转，再向前走。
-		低速前进 * 3，低速右转 * 2，高速前进 * 2；
+		
+		右转屏蔽的多，因为车车是靠右行进的；右转可能会撞墙
+
 		*/
 
 		moveForward(Radarspeed[1], Radartime_use[1]);
