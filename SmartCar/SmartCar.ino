@@ -285,7 +285,7 @@ void infraredTracking()
 	const int baseSpeed = 100; // 基础速度
 	const int baseTime = 150;  // 基础时间
 	const int maxSpeed = 240;  // 最大速度
-	const int pidTime = 50;   // PID一次进行的时间
+	const int pidTime = 50;	   // PID一次进行的时间
 
 	const int correctionSpeed = 120; // 修正速度(20~30°)
 	const int correctionTime = 120;	 // 修正时长
@@ -294,14 +294,14 @@ void infraredTracking()
 	const int turnTime = 180;
 
 	// 定义传感器权重
-	const int weights[6] = {-40, -20, -5, 5, 20,40}; // 各传感器的权重值
+	const double weights[6] = {-0.8, -0.5, -0.2, 0.2, 0.5, 0.8}; // 各传感器的权重值
 
 	// 计算偏差值
-	int error = 0;
-	int activeSensors = 0;
+	double error = 0;
+	double activeSensors = 0;
 
-	static int lastError = 0;
-	static int integral = 0;
+	static double lastError = 0;
+	static double integral = 0;
 
 	for (int i = 0; i < 6; i++)
 	{
@@ -325,7 +325,7 @@ void infraredTracking()
 	// 处理不同情况
 	if (activeSensors == 0 && false)
 	{
-		
+
 		//  没有检测到任何黑线，左右摆，一波测试效果之后，再后退
 		if (searchState == 0)
 		{
@@ -370,7 +370,7 @@ void infraredTracking()
 		return; // 退出函数，不执行后续循迹逻辑
 	}
 
-	if ((irValues[0] == 1 || (irValues[1] == 1 && irValues[2] == 1))&& false)
+	if ((irValues[0] == 1 || (irValues[1] == 1 && irValues[2] == 1)) && false)
 	{
 		// 检测到左侧传感器，可能是直角或锐角左转
 		Serial.println("Sharp left turn detected");
@@ -378,7 +378,7 @@ void infraredTracking()
 		lastError = 0;
 		integral = 0;
 	}
-	else if ((irValues[5] == 1 || (irValues[4] == 1 && irValues[3] == 1))&& false)
+	else if ((irValues[5] == 1 || (irValues[4] == 1 && irValues[3] == 1)) && false)
 	{
 		// 检测到右侧传感器，可能是直角或锐角右转
 		Serial.println("Sharp right turn detected");
@@ -391,17 +391,17 @@ void infraredTracking()
 		// 正常循迹情况，使用PID控制
 		float kp = 0.9; // 比例系数；响应当前误差，过高导致振荡
 		float ki = 0.1; // 积分系数；累计历史误差，调高可以避免偏向一侧
-		float kd = 0; // 微分系数；误差变化率，增大会减小超调变笨拙
+		float kd = 0;	// 微分系数；误差变化率，增大会减小超调变笨拙
 
 		// 计算PID值
 		integral += error;
-		int derivative = error - lastError;
-		int correction = kp * error + ki * integral + kd * derivative;
+		double derivative = error - lastError;
+		double correction = kp * error + ki * integral + kd * derivative;
 		lastError = error;
 
 		// 应用修正
-		int leftSpeed = baseSpeed + correction;
-		int rightSpeed = baseSpeed - correction;
+		int leftSpeed = baseSpeed * (1 + correction);
+		int rightSpeed = baseSpeed * (1 - correction);
 
 		// 限制速度范围
 		leftSpeed = constrain(leftSpeed, 0, maxSpeed);
@@ -475,8 +475,8 @@ void radarAvoidance()
 
 		moveForward(Radarspeed[1], Radartime_use[1]);
 		turnRightSmall(Radarspeed[0], Radartime_use[0]);
-		//moveBackward(Radarspeed[1], Radartime_use[1]);
-		//turnRight(Radarspeed[1], Radartime_use[1]);
+		// moveBackward(Radarspeed[1], Radartime_use[1]);
+		// turnRight(Radarspeed[1], Radartime_use[1]);
 		moveForward(Radarspeed[1], Radartime_use[1]);
 		turnLeftSmall(Radarspeed[1], Radartime_use[1]);
 		moveForward(Radarspeed[1], Radartime_use[1]);
@@ -484,9 +484,9 @@ void radarAvoidance()
 		moveForward(Radarspeed[0], Radartime_use[0]);
 		turnLeftSmall(Radarspeed[1], Radartime_use[1]);
 		moveForward(Radarspeed[0], Radartime_use[0]);
-		//turnRightSmall(Radarspeed[0], Radartime_use[0]);
-		//moveForward(Radarspeed[0], Radartime_use[0]);
+		// turnRightSmall(Radarspeed[0], Radartime_use[0]);
 		// moveForward(Radarspeed[0], Radartime_use[0]);
+		//  moveForward(Radarspeed[0], Radartime_use[0]);
 
 		Serial.println("[调试]1. 【右转】当右边大于 {A探测限值} ");
 	}
@@ -545,7 +545,7 @@ void radarAvoidance()
 		高速前进 * 2
 		*/
 		moveForward(Radarspeed[0], Radartime_use[0]);
-		//moveForward(Radarspeed[0], Radartime_use[0]);
+		// moveForward(Radarspeed[0], Radartime_use[0]);
 		Serial.println("[调试]6. 【直行前进】 可以前进");
 	}
 }
