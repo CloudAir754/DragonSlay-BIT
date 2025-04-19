@@ -391,6 +391,7 @@ void radarAvoidance()
 	// 【调参】雷达调优看这里
 	const int A_RADAR_LENGH = 50; // A探测限值；大于此值则认为有通道（转弯）
 	const int B_FRONT_HOPE = 12;  // B前进期望；大于此值则可向前走
+	const int C_Not_Center = 23; // C；居中时，左右大概时17
 
 	if (frontDistance <= B_FRONT_HOPE)
 	{
@@ -437,6 +438,52 @@ void radarAvoidance()
 	}
 	else
 	{
+		if (leftDistance>C_Not_Center)
+		{
+			// 过于偏右
+			moveBackward(Radarspeed[1],Radartime_use[1]);
+			turnLeftSmall(Radarspeed[1],Radartime_use[1]);
+			turnLeftSmall(Radarspeed[1],Radartime_use[1]);
+			moveForward(Radarspeed[1],Radartime_use[1]);
+			turnRightSmall(Radarspeed[1],Radartime_use[1]);
+			moveForward(Radarspeed[1],Radartime_use[1]);
+			Serial.println("过于右偏");
+
+		}
+		else if (rightDistance>C_Not_Center)
+		{
+			// 过于偏左
+			moveBackward(Radarspeed[1],Radartime_use[1]);
+			turnRightSmall(Radarspeed[1],Radartime_use[1]);
+			turnRightSmall(Radarspeed[1],Radartime_use[1]);
+			moveForward(Radarspeed[1],Radartime_use[1]);
+			turnLeftSmall(Radarspeed[1],Radartime_use[1]);
+			moveForward(Radarspeed[1],Radartime_use[1]);
+			Serial.println("过于左偏");
+		}
+		
+		if (leftDistance< rightDistance)
+		{
+			//已经靠左偏
+
+			turnRightSmall(Radarspeed[1],Radartime_use[1]);
+			moveForward(Radarspeed[1],Radartime_use[1]);
+			turnLeftSmall(Radarspeed[1],Radartime_use[1]);
+			moveForward(Radarspeed[1],Radartime_use[1]);		
+			Serial.println("已经靠左偏");
+
+		}
+		else{
+			//已经靠右偏
+
+			turnLeftSmall(Radarspeed[1],Radartime_use[1]);
+			moveForward(Radarspeed[1],Radartime_use[1]);
+			turnRightSmall(Radarspeed[1],Radartime_use[1]);
+			moveForward(Radarspeed[1],Radartime_use[1]);
+			Serial.println("已经靠右偏");
+		}
+		// 居中的时候，左右基本上是17；大于
+		Serial.println("记录现在的距离");
 		// 其余情况
 		delay(300);
 	}
