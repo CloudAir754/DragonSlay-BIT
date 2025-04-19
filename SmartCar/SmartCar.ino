@@ -50,7 +50,9 @@ float frontDistance = 0; // 前方障碍物距离
 
 // 舵机控制变量
 Servo myServo;		 // 舵机对象
-int servoAngle = 90; // 舵机角度（范围0-180，90为中间位置）
+int servoAngle = 85; // 舵机角度（范围0-180，90为中间位置）
+int open_servo = 78; // 舵机开启角度
+int open_time = 100 ;// 舵机开启时间
 
 // 系统工作模式枚举
 enum SystemMode
@@ -116,7 +118,7 @@ void setup()
 
 	// 初始化舵机
 	myServo.attach(SERVO_PIN);
-	myServo.write(servoAngle); // 初始位置居中
+	myServo.write(servoAngle); // 初始位置关
 
 	// 初始状态停止所有电机
 	stopMotors(50);
@@ -232,15 +234,15 @@ void handleBluetooth()
 				Serial.println(F("True-高速长时"));
 
 			break;
-		case 'X': // 舵机控制（0°-90°）
-				  // TODO 舵机控制需要参考球机的设置
+		case 'X': // 舵机控制
+				  
 			if (currentMode == MODE_MANUAL_CONTROL)
 			{
-				myServo.write(20); // 转到0°
-				delay(300);		   // 停顿500ms
+				myServo.write(open_servo); // 转到开
+				delay(open_time);		   // 停顿100ms
 
-				myServo.write(servoAngle); // 回到90°
-				Serial.println(F("Servo moved to 0 and back to 90"));
+				myServo.write(servoAngle); // 回到关
+				Serial.println(F("biu~"));
 			}
 			break;
 		}
