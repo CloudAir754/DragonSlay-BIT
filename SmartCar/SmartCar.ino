@@ -393,16 +393,17 @@ void radarAvoidance()
 	const int B_FRONT_HOPE = 12;  // B前进期望；大于此值则可向前走
 	const int C_Not_Center = 23;  // C；居中时，左右大概时17
 
-	if ((frontDistance <= B_FRONT_HOPE) || (frontDistance > 190))
+	if ((frontDistance <= B_FRONT_HOPE) )
 	{
+		// 直接在结构上下手，避免撞墙
 		/*
 		3. 【倒退】陷入困境，当前方距离小于等于 {B前进期望} 。
 		则前方撞墙：倒退一定距离。
 		慢速后退 * 2 大概6cm：*/
 		stopMotors(100);
+		moveBackward(Radarspeed[0], Radartime_use[0]);
 		moveBackward(Radarspeed[1], Radartime_use[1]);
-		moveBackward(Radarspeed[1], Radartime_use[1]);
-		moveBackward(Radarspeed[1], Radartime_use[1]);
+		//moveBackward(Radarspeed[1], Radartime_use[1]);
 		Serial.println("[调试]3. 【倒退】陷入困境，当前方距离小于等于 {B前进期望} ");
 	}
 	else if (rightDistance > A_RADAR_LENGH)
