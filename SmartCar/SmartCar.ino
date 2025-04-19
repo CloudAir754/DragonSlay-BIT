@@ -369,8 +369,7 @@ void infraredTracking()
  */
 void radarAvoidance()
 {
-	delay(100);
-	return;
+
 	// 1. 读取传感器数据
 
 	leftDistance = readDistance(leftTrig, leftEcho);
@@ -392,7 +391,6 @@ void radarAvoidance()
 	// 【调参】雷达调优看这里
 	const int A_RADAR_LENGH = 50; // A探测限值；大于此值则认为有通道（转弯）
 	const int B_FRONT_HOPE = 12;  // B前进期望；大于此值则可向前走
-	const int C_RIGHT_MIN = 12;	  // C贴右最小值；小于此值则认为太靠右
 
 	if (frontDistance <= B_FRONT_HOPE)
 	{
@@ -410,24 +408,14 @@ void radarAvoidance()
 		1. 【右转】当右边大于 {A探测限值} 。
 		则右边有通道：先向前（可以撞墙），再右转，再向前走。
 
-		右转屏蔽的多，因为车车是靠右行进的；右转可能会撞墙
-
 		*/
 
-		moveForward(Radarspeed[1], Radartime_use[1]);
-		turnRightSmall(Radarspeed[0], Radartime_use[0]);
-		// moveBackward(Radarspeed[1], Radartime_use[1]);
-		// turnRight(Radarspeed[1], Radartime_use[1]);
-		moveForward(Radarspeed[1], Radartime_use[1]);
-		turnLeftSmall(Radarspeed[1], Radartime_use[1]);
-		moveForward(Radarspeed[1], Radartime_use[1]);
+		moveForward(Radarspeed[0], Radartime_use[0]);
 		turnRightSmall(Radarspeed[0], Radartime_use[0]);
 		moveForward(Radarspeed[0], Radartime_use[0]);
-		turnLeftSmall(Radarspeed[1], Radartime_use[1]);
+		turnRightSmall(Radarspeed[1], Radartime_use[1]);
 		moveForward(Radarspeed[0], Radartime_use[0]);
-		// turnRightSmall(Radarspeed[0], Radartime_use[0]);
-		// moveForward(Radarspeed[0], Radartime_use[0]);
-		//  moveForward(Radarspeed[0], Radartime_use[0]);
+		moveForward(Radarspeed[0], Radartime_use[0]);
 
 		Serial.println("[调试]1. 【右转】当右边大于 {A探测限值} ");
 	}
@@ -438,73 +426,19 @@ void radarAvoidance()
 		则左边有通道：先向前（可以撞墙），再左转，再向前走。
 		低速前进 * 3，慢速左转 * 2，高速前进 * 2；
 		*/
-		moveForward(Radarspeed[1], Radartime_use[1]);
-		turnLeft(Radarspeed[1], Radartime_use[1]);
-		moveBackward(Radarspeed[1], Radartime_use[1]);
-		turnLeft(Radarspeed[1], Radartime_use[1]);
-		moveForward(Radarspeed[1], Radartime_use[1]);
-		turnRightSmall(Radarspeed[1], Radartime_use[1]);
-		moveForward(Radarspeed[1], Radartime_use[1]);
-		turnLeftSmall(Radarspeed[0] / 2, Radartime_use[0]);
+
 		moveForward(Radarspeed[0], Radartime_use[0]);
+		turnLeftSmall(Radarspeed[0], Radartime_use[0]);
 		moveForward(Radarspeed[0], Radartime_use[0]);
+		turnLeftSmall(Radarspeed[1], Radartime_use[1]);
 		moveForward(Radarspeed[0], Radartime_use[0]);
-		// moveForward(Radarspeed[0], Radartime_use[0]);
 
 		Serial.println("[调试]2. 【左转】当左边大于 {A探测限值} ");
 	}
-	else if (false)
+	else
 	{
-		int pidTime = 20;
-		// 计算偏差值
-		double error = 0;
-		int baseSpeed = 150;
-		int maxSpeed = 250;
-
-		static double lastError = 0;
-		static double integral = 0;
-
-		// error part
-		// 定义传感器权重
-
-		//
-		// leftDistance 17
-		// rightDistance
-		// frontDistance
-		// error = 1; 正向为left
-
-		error = 3 * (rightDistance - leftDistance) / (rightDistance + leftDistance);
-
-		// 正常循迹情况，使用PID控制
-		float kp = 0.85; // 比例系数；响应当前误差，过高导致振荡
-		float ki = 0.1;	 // 积分系数；累计历史误差，调高可以避免偏向一侧
-		float kd = 0.05; // 微分系数；误差变化率，增大会减小超调变笨拙
-
-		// 计算PID值
-		integral += error;
-		double derivative = error - lastError;
-		double correction = kp * error + ki * integral + kd * derivative;
-		lastError = error;
-
-		// 应用修正
-		int leftSpeed = baseSpeed * (1 + correction);
-		int rightSpeed = baseSpeed * (1 - correction);
-
-		// 限制速度范围
-		leftSpeed = constrain(leftSpeed, 0, maxSpeed);
-		rightSpeed = constrain(rightSpeed, 0, maxSpeed);
-
-		// 控制电机
-		Serial.print("PID control - L: ");
-		Serial.print(leftSpeed);
-		Serial.print(" R: ");
-		Serial.println(rightSpeed);
-
-		stopState();
-		motorControlState(leftSpeed, rightSpeed);
-		delay(pidTime);
-		stopState();
-		Serial.println("[调试]3. 前进微调");
+		// 其余情况
+		delay(300);
 	}
 	delay(20);
 }
