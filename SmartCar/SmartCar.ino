@@ -83,7 +83,7 @@ bool manualSpeed = false;			   // 手动控制速度标志（f-低速短时；t-
 #define LongTerm 350		  // 长时间行走delay
 #define ShortTerm 200		  // 短时间行走delay
 
-#define DebugTime 000 // 用于调试时，每个循环进行等待 20 700
+#define DebugTime 200 // 用于调试时，每个循环进行等待 20 700
 
 // 初始化函数
 void setup()
@@ -163,7 +163,8 @@ void handleBluetooth()
 	if (Serial.available())
 	{
 		char command = Serial.read();
-
+		Serial.print("你输入了：");
+		Serial.println(command);
 		// 模式切换命令
 		switch (command)
 		{
@@ -368,6 +369,8 @@ void infraredTracking()
  */
 void radarAvoidance()
 {
+	delay(100);
+	return;
 	// 1. 读取传感器数据
 
 	leftDistance = readDistance(leftTrig, leftEcho);
@@ -442,11 +445,11 @@ void radarAvoidance()
 		moveForward(Radarspeed[1], Radartime_use[1]);
 		turnRightSmall(Radarspeed[1], Radartime_use[1]);
 		moveForward(Radarspeed[1], Radartime_use[1]);
-		turnLeftSmall(Radarspeed[0]/2, Radartime_use[0]);
+		turnLeftSmall(Radarspeed[0] / 2, Radartime_use[0]);
 		moveForward(Radarspeed[0], Radartime_use[0]);
 		moveForward(Radarspeed[0], Radartime_use[0]);
 		moveForward(Radarspeed[0], Radartime_use[0]);
-		//moveForward(Radarspeed[0], Radartime_use[0]);
+		// moveForward(Radarspeed[0], Radartime_use[0]);
 
 		Serial.println("[调试]2. 【左转】当左边大于 {A探测限值} ");
 	}
@@ -460,6 +463,17 @@ void radarAvoidance()
 
 		static double lastError = 0;
 		static double integral = 0;
+
+		// error part
+		// 定义传感器权重
+
+		//
+		// leftDistance 17
+		// rightDistance
+		// frontDistance
+		// error = 1; 正向为left
+
+		error = 3 * (rightDistance - leftDistance) / (rightDistance + leftDistance);
 
 		// 正常循迹情况，使用PID控制
 		float kp = 0.85; // 比例系数；响应当前误差，过高导致振荡
@@ -492,6 +506,7 @@ void radarAvoidance()
 		stopState();
 		Serial.println("[调试]3. 前进微调");
 	}
+	delay(20);
 }
 
 // 手动控制功能函数
