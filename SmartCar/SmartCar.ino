@@ -83,7 +83,7 @@ bool manualSpeed = false;			   // 手动控制速度标志（f-低速短时；t-
 #define LongTerm 350		  // 长时间行走delay
 #define ShortTerm 200		  // 短时间行走delay
 
-#define DebugTime 200 // 用于调试时，每个循环进行等待 20 700
+#define DebugTime 20 // 用于调试时，每个循环进行等待 20 700
 
 // 初始化函数
 void setup()
@@ -442,6 +442,8 @@ void radarAvoidance()
 		{
 			// 过于偏右
 			moveBackward(Radarspeed[1],Radartime_use[1]);
+			stopState();
+			delay(100);
 			turnLeftSmall(Radarspeed[1],Radartime_use[1]);
 			turnLeftSmall(Radarspeed[1],Radartime_use[1]);
 			moveForward(Radarspeed[1],Radartime_use[1]);
@@ -454,6 +456,8 @@ void radarAvoidance()
 		{
 			// 过于偏左
 			moveBackward(Radarspeed[1],Radartime_use[1]);
+			stopState();
+			delay(100);
 			turnRightSmall(Radarspeed[1],Radartime_use[1]);
 			turnRightSmall(Radarspeed[1],Radartime_use[1]);
 			moveForward(Radarspeed[1],Radartime_use[1]);
@@ -482,10 +486,9 @@ void radarAvoidance()
 			moveForward(Radarspeed[1],Radartime_use[1]);
 			Serial.println("已经靠右偏");
 		}
-		// 居中的时候，左右基本上是17；大于
-		Serial.println("记录现在的距离");
+		
 		// 其余情况
-		delay(300);
+		delay(100);
 	}
 	delay(20);
 }
