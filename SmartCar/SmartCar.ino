@@ -83,7 +83,7 @@ bool manualSpeed = false;			   // 手动控制速度标志（f-低速短时；t-
 #define LongTerm 350		  // 长时间行走delay
 #define ShortTerm 200		  // 短时间行走delay
 
-#define DebugTime 020 // 用于调试时，每个循环进行等待
+#define DebugTime 000 // 用于调试时，每个循环进行等待 20 700
 
 // 初始化函数
 void setup()
