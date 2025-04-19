@@ -232,7 +232,7 @@ void handleBluetooth()
 
 			break;
 		case 'X': // 舵机控制（0°-90°）
-		// TODO 舵机控制需要参考球机的设置
+				  // TODO 舵机控制需要参考球机的设置
 			if (currentMode == MODE_MANUAL_CONTROL)
 			{
 				myServo.write(20); // 转到0°
@@ -299,12 +299,11 @@ void infraredTracking()
 
 	for (int i = 0; i < 6; i++)
 	{
-		if (irValues[i] ) // 检测到黑线
+		if (irValues[i]) // 检测到黑线
 		{
 			error += weights[i];
 		}
 	}
-
 
 	if (irValues[0] && irValues[1])
 	{
@@ -407,7 +406,7 @@ void radarAvoidance()
 		/*
 		1. 【右转】当右边大于 {A探测限值} 。
 		则右边有通道：先向前（可以撞墙），再右转，再向前走。
-		
+
 		右转屏蔽的多，因为车车是靠右行进的；右转可能会撞墙
 
 		*/
@@ -443,49 +442,55 @@ void radarAvoidance()
 		moveForward(Radarspeed[1], Radartime_use[1]);
 		turnRightSmall(Radarspeed[1], Radartime_use[1]);
 		moveForward(Radarspeed[1], Radartime_use[1]);
-		turnLeftSmall(Radarspeed[0], Radartime_use[0]);
+		turnLeftSmall(Radarspeed[0]/2, Radartime_use[0]);
 		moveForward(Radarspeed[0], Radartime_use[0]);
 		moveForward(Radarspeed[0], Radartime_use[0]);
 		moveForward(Radarspeed[0], Radartime_use[0]);
-		moveForward(Radarspeed[0], Radartime_use[0]);
+		//moveForward(Radarspeed[0], Radartime_use[0]);
 
 		Serial.println("[调试]2. 【左转】当左边大于 {A探测限值} ");
 	}
-	else if (rightDistance > leftDistance)
+	else if (false)
 	{
-		/*
-		4. 【直行前进不够右】当 右侧距离大于 左侧距离。
-		则右侧不够：先右一点，再少往前一点。
-		慢小右 * 1，高速前进 * 1
-		*/
-		turnRightSmall(Radarspeed[1], Radartime_use[1]);
-		moveForward(Radarspeed[0], Radartime_use[0]);
-		turnLeftSmall(Radarspeed[1], Radartime_use[1]);
-		Serial.println("[调试]4. 【直行前进不够右】当 右侧距离大于 左侧距离 ");
-	}
-	else if (rightDistance < C_RIGHT_MIN)
-	{
-		/*
-		5. 【直行前进太靠右】当 右侧距离小于 {C贴右最小值}。
-		则右侧贴的太近：先左一点，再少往前一点，再回方向。
-		慢小左 * 1，高速前进 * 1 ，慢小右*1
-		*/
-		turnLeftSmall(Radarspeed[1], Radartime_use[1]);
-		turnLeftSmall(Radarspeed[1], Radartime_use[1]);
-		moveForward(Radarspeed[1], Radartime_use[1]);
-		turnRightSmall(Radarspeed[1], Radartime_use[1]);
-		turnRightSmall(Radarspeed[1], Radartime_use[1]);
-		Serial.println("[调试]5. 【直行前进太靠右】当 右侧距离小于 {C贴右最小值} ");
-	}
-	else
-	{
-		/*&
-		6. 【直行前进】 可以前进。
-		高速前进 * 2
-		*/
-		moveForward(Radarspeed[0], Radartime_use[0]);
-		// moveForward(Radarspeed[0], Radartime_use[0]);
-		Serial.println("[调试]6. 【直行前进】 可以前进");
+		int pidTime = 20;
+		// 计算偏差值
+		double error = 0;
+		int baseSpeed = 150;
+		int maxSpeed = 250;
+
+		static double lastError = 0;
+		static double integral = 0;
+
+		// 正常循迹情况，使用PID控制
+		float kp = 0.85; // 比例系数；响应当前误差，过高导致振荡
+		float ki = 0.1;	 // 积分系数；累计历史误差，调高可以避免偏向一侧
+		float kd = 0.05; // 微分系数；误差变化率，增大会减小超调变笨拙
+
+		// 计算PID值
+		integral += error;
+		double derivative = error - lastError;
+		double correction = kp * error + ki * integral + kd * derivative;
+		lastError = error;
+
+		// 应用修正
+		int leftSpeed = baseSpeed * (1 + correction);
+		int rightSpeed = baseSpeed * (1 - correction);
+
+		// 限制速度范围
+		leftSpeed = constrain(leftSpeed, 0, maxSpeed);
+		rightSpeed = constrain(rightSpeed, 0, maxSpeed);
+
+		// 控制电机
+		Serial.print("PID control - L: ");
+		Serial.print(leftSpeed);
+		Serial.print(" R: ");
+		Serial.println(rightSpeed);
+
+		stopState();
+		motorControlState(leftSpeed, rightSpeed);
+		delay(pidTime);
+		stopState();
+		Serial.println("[调试]3. 前进微调");
 	}
 }
 
