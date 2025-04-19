@@ -83,7 +83,7 @@ bool manualSpeed = false;			   // 手动控制速度标志（f-低速短时；t-
 #define LongTerm 350		  // 长时间行走delay
 #define ShortTerm 200		  // 短时间行走delay
 
-#define DebugTime 050 // 用于调试时，每个循环进行等待
+#define DebugTime 020 // 用于调试时，每个循环进行等待
 
 // 初始化函数
 void setup()
@@ -281,15 +281,15 @@ void infraredTracking()
 
 	// 定义速度参数
 	// TODO 速度参数得调小；也要考虑过坡的动力要求
-	const int baseSpeed = 150; // 基础速度
-	const int maxSpeed = 240;  // 最大速度
-	const int pidTime = 25;	   // PID一次进行的时间
+	const int baseSpeed = 200; // 基础速度
+	const int maxSpeed = 250;  // 最大速度
+	const int pidTime = 20;	   // PID一次进行的时间
 
 	const int turnSpeed = 150; // 转弯速度(直角弯）
 	const int turnTime = 150;
 
 	// 定义传感器权重
-	const double weights[6] = {-1.0, -0.6, -0.3, 0.3, 0.6, 1.0}; // 各传感器的权重值
+	const double weights[6] = {-1.2, -0.8, -0.4, 0.4, 0.8, 1.2}; // 各传感器的权重值
 
 	// 计算偏差值
 	double error = 0;
