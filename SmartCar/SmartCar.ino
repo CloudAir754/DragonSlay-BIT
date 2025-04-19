@@ -391,14 +391,16 @@ void radarAvoidance()
 	// 【调参】雷达调优看这里
 	const int A_RADAR_LENGH = 50; // A探测限值；大于此值则认为有通道（转弯）
 	const int B_FRONT_HOPE = 12;  // B前进期望；大于此值则可向前走
-	const int C_Not_Center = 23; // C；居中时，左右大概时17
+	const int C_Not_Center = 23;  // C；居中时，左右大概时17
 
-	if (frontDistance <= B_FRONT_HOPE)
+	if ((frontDistance <= B_FRONT_HOPE) || (frontDistance > 190))
 	{
 		/*
 		3. 【倒退】陷入困境，当前方距离小于等于 {B前进期望} 。
 		则前方撞墙：倒退一定距离。
 		慢速后退 * 2 大概6cm：*/
+		stopMotors(100);
+		moveBackward(Radarspeed[1], Radartime_use[1]);
 		moveBackward(Radarspeed[1], Radartime_use[1]);
 		moveBackward(Radarspeed[1], Radartime_use[1]);
 		Serial.println("[调试]3. 【倒退】陷入困境，当前方距离小于等于 {B前进期望} ");
@@ -438,55 +440,69 @@ void radarAvoidance()
 	}
 	else
 	{
-		if (leftDistance>C_Not_Center)
+		if (leftDistance > C_Not_Center)
 		{
 			// 过于偏右
-			moveBackward(Radarspeed[1],Radartime_use[1]);
+			moveBackward(Radarspeed[1], Radartime_use[1]);
 			stopState();
 			delay(100);
-			turnLeftSmall(Radarspeed[1],Radartime_use[1]);
-			turnLeftSmall(Radarspeed[1],Radartime_use[1]);
-			moveForward(Radarspeed[1],Radartime_use[1]);
-			turnRightSmall(Radarspeed[1],Radartime_use[1]);
-			moveForward(Radarspeed[1],Radartime_use[1]);
-			Serial.println("过于右偏");
+			turnLeftSmall(Radarspeed[1], Radartime_use[1]);
+			turnLeftSmall(Radarspeed[1], Radartime_use[1]);
+			moveForward(Radarspeed[1], Radartime_use[1]);
+			turnRightSmall(Radarspeed[1], Radartime_use[1]);
+			moveForward(Radarspeed[1], Radartime_use[1]);
 
+			Serial.println("过于右偏");
 		}
-		else if (rightDistance>C_Not_Center)
+		else if (rightDistance > C_Not_Center)
 		{
 			// 过于偏左
-			moveBackward(Radarspeed[1],Radartime_use[1]);
+			moveBackward(Radarspeed[1], Radartime_use[1]);
+
 			stopState();
 			delay(100);
-			turnRightSmall(Radarspeed[1],Radartime_use[1]);
-			turnRightSmall(Radarspeed[1],Radartime_use[1]);
-			moveForward(Radarspeed[1],Radartime_use[1]);
-			turnLeftSmall(Radarspeed[1],Radartime_use[1]);
-			moveForward(Radarspeed[1],Radartime_use[1]);
+			turnRightSmall(Radarspeed[1], Radartime_use[1]);
+
+			turnRightSmall(Radarspeed[1], Radartime_use[1]);
+
+			moveForward(Radarspeed[1], Radartime_use[1]);
+
+			turnLeftSmall(Radarspeed[1], Radartime_use[1]);
+
+			moveForward(Radarspeed[1], Radartime_use[1]);
+
 			Serial.println("过于左偏");
 		}
-		
-		if (leftDistance< rightDistance)
+
+		if (leftDistance < rightDistance)
 		{
-			//已经靠左偏
+			// 已经靠左偏
 
-			turnRightSmall(Radarspeed[1],Radartime_use[1]);
-			moveForward(Radarspeed[1],Radartime_use[1]);
-			turnLeftSmall(Radarspeed[1],Radartime_use[1]);
-			moveForward(Radarspeed[1],Radartime_use[1]);		
+			turnRightSmall(Radarspeed[1], Radartime_use[1]);
+
+			moveForward(Radarspeed[1], Radartime_use[1]);
+
+			turnLeftSmall(Radarspeed[1], Radartime_use[1]);
+
+			moveForward(Radarspeed[1], Radartime_use[1]);
+
 			Serial.println("已经靠左偏");
-
 		}
-		else{
-			//已经靠右偏
+		else
+		{
+			// 已经靠右偏
 
-			turnLeftSmall(Radarspeed[1],Radartime_use[1]);
-			moveForward(Radarspeed[1],Radartime_use[1]);
-			turnRightSmall(Radarspeed[1],Radartime_use[1]);
-			moveForward(Radarspeed[1],Radartime_use[1]);
+			turnLeftSmall(Radarspeed[1], Radartime_use[1]);
+
+			moveForward(Radarspeed[1], Radartime_use[1]);
+
+			turnRightSmall(Radarspeed[1], Radartime_use[1]);
+
+			moveForward(Radarspeed[1], Radartime_use[1]);
+
 			Serial.println("已经靠右偏");
 		}
-		
+
 		// 其余情况
 		delay(100);
 	}
@@ -539,12 +555,12 @@ float readDistance(int trigPin, int echoPin)
 	delayMicroseconds(10);
 	digitalWrite(trigPin, LOW);
 
-	// 测量回波脉冲宽度（添加超时时间6ms，约100cm）
-	long duration = pulseIn(echoPin, HIGH, 6000);
+	// 测量回波脉冲宽度（添加超时时间10ms，约178cm）
+	long duration = pulseIn(echoPin, HIGH, 10000);
 
 	if (duration == 0)
 	{
-		return 150.0; // 测量范围是0~110+；若为150.0则认为无穷大
+		return 200.0; // 测量范围是0~110+；若为200.0则认为无穷大
 	}
 
 	// 计算距离（声速340m/s，除以2因为是往返距离）
