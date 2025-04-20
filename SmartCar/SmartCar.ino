@@ -50,9 +50,9 @@ float frontDistance = 0; // 前方障碍物距离
 
 // 舵机控制变量
 Servo myServo;		 // 舵机对象
-int servoAngle = 85; // 舵机角度（范围0-180，90为中间位置）
-int open_servo = 78; // 舵机开启角度
-int open_time = 100 ;// 舵机开启时间
+int servoAngle = 97; // 舵机角度（范围0-180，90为中间位置）
+int open_servo = 76; // 舵机开启角度
+int open_time = 70 ;// 舵机开启时间
 
 // 系统工作模式枚举
 enum SystemMode
