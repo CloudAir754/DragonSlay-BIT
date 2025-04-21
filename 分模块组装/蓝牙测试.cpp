@@ -1,11 +1,3 @@
-#include <SoftwareSerial.h>
-
-// 定义蓝牙模块的RX和TX引脚
-#define BT_RX 10
-#define BT_TX 11
-
-// 创建软件串口对象
-SoftwareSerial BTSerial(BT_RX, BT_TX);
 
 void setup() {
   // 初始化硬件串口（用于与PC通信）

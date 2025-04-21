@@ -1,12 +1,12 @@
 /*
- * 智能小车主控程序 v0.4.1
- * 🚗💨
- *
- *
+ * 智能小车主控程序 v1.0.0
+ * 该程序用于北理工屠龙大赛
+ * 可做参考，建议大改。以避免赛方查重（拱手.jpg）
+ * 🚗💨【祝你成功！】
  */
 
-// TODO 【版本信息】
-#define _VERSION_ "v0.4.1 "
+// 【版本信息】（由于在终端输出信息，便于确认自己是否烧对了版本）
+#define _VERSION_ "v1.0.0 "
 
 #include <Servo.h> // 舵机控制库
 
@@ -78,6 +78,7 @@ ManualState manualState = MANUAL_STOP; // 手动控制状态
 bool manualSpeed = false;			   // 手动控制速度标志（f-低速短时；t-高速长时）
 
 // 手动加速部分
+//【该计数仅供参考，实际工作中，受电池电压、轮胎磨损程度、车重、重心分布影响】
 // 高速长时=10cm~
 // 低速短时=4cm~
 #define StandardLowSpeed 100  // 低速pwm
@@ -86,6 +87,7 @@ bool manualSpeed = false;			   // 手动控制速度标志（f-低速短时；t-
 #define ShortTerm 200		  // 短时间行走delay
 
 #define DebugTime 20 // 用于调试时，每个循环进行等待 20 700
+//（700ms延时，用于看终端汇报的情况，给人脑以debug方向）
 
 // 初始化函数
 void setup()
@@ -165,6 +167,7 @@ void handleBluetooth()
 	if (Serial.available())
 	{
 		char command = Serial.read();
+		 // 这个可以去掉，主要用于debug用【你无法现象，蓝牙在连接后会发送一串确认消息，参赛前我的蓝牙在我发送一个信息后就卡死闪退……后面好不容易弄好……】
 		Serial.print("你输入了：");
 		Serial.println(command);
 		// 模式切换命令
@@ -239,8 +242,7 @@ void handleBluetooth()
 			if (currentMode == MODE_MANUAL_CONTROL)
 			{
 				myServo.write(open_servo); // 转到开
-				delay(open_time);		   // 停顿100ms
-
+				delay(open_time);		   // 停顿
 				myServo.write(servoAngle); // 回到关
 				Serial.println(F("biu~"));
 			}
@@ -283,7 +285,9 @@ void infraredTracking()
 	Serial.println();
 
 	// 定义速度参数
-	// TODO 速度参数得调小；也要考虑过坡的动力要求
+	//  速度参数得调小；也要考虑过坡的动力要求
+	// 回复上一行，本队在实际比赛中，战略性放弃了爬坡需求；红外太低了会卡坡，改结构会导致很多额外的问题
+	//  较大的基础和较小的pid持续时间，会让你的新能源车有一种单杠内燃机车的感觉（人话：像拖拉机，突突突——突突；不过很稳）
 	const int baseSpeed = 200; // 基础速度
 	const int maxSpeed = 250;  // 最大速度
 	const int pidTime = 20;	   // PID一次进行的时间
@@ -391,13 +395,15 @@ void radarAvoidance()
 	int Radartime_use[2] = {LongTerm, ShortTerm};			   // 0高速，1低速
 
 	// 【调参】雷达调优看这里
+	// 这些超参数，能保证测试赛道正常走就行，不过可以考虑一些特殊情况
+	//		毕竟，比赛赛道往往和你的想象由很大差距(科协的小伙伴的任何一个灵机一动，都会让你调的无比牛的“先验”参数，变成过拟合~)
 	const int A_RADAR_LENGH = 50; // A探测限值；大于此值则认为有通道（转弯）
 	const int B_FRONT_HOPE = 12;  // B前进期望；大于此值则可向前走
 	const int C_Not_Center = 23;  // C；居中时，左右大概时17
 
+	// 建议在车身上增加防撞设施，避免雷达在车子紧贴墙壁时，雷达传回数据为0或极大；进而导致以下的决策过程出现意外
 	if ((frontDistance <= B_FRONT_HOPE) )
 	{
-		// 直接在结构上下手，避免撞墙
 		/*
 		3. 【倒退】陷入困境，当前方距离小于等于 {B前进期望} 。
 		则前方撞墙：倒退一定距离。
@@ -506,7 +512,6 @@ void radarAvoidance()
 			Serial.println("已经靠右偏");
 		}
 
-		// 其余情况
 		delay(100);
 	}
 	delay(20);
