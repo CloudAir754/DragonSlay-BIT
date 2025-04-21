@@ -1,7 +1,7 @@
 #include <Servo.h>  // 引入Servo库
 
 // 定义舵机引脚
-#define SERVO_PIN 11
+#define SERVO_PIN 10
 
 // 创建舵机对象
 Servo myServo;

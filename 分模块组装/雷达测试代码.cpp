@@ -3,7 +3,7 @@
 // 定义超声波模块引脚
 
 const int trigPinLeft = 4;
-const int trigPinFront = 3;
+const int trigPinFront = 7;
 const int trigPinRight = 2;
 
 const int echoPinLeft = 13;

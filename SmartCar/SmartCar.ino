@@ -1,14 +1,12 @@
 /*
- * 智能小车主控程序 v0.3.3
- * 🚗💨
- * 改进内容：
- * 1. 雷达循迹
- *
- *
+ * 智能小车主控程序 v1.0.0
+ * 该程序用于北理工屠龙大赛
+ * 可做参考，建议大改。以避免赛方查重（拱手.jpg）
+ * 🚗💨【祝你成功！】
  */
 
-// TODO 【版本信息】
-#define _VERSION_ "v0.3.3"
+// 【版本信息】（由于在终端输出信息，便于确认自己是否烧对了版本）
+#define _VERSION_ "v1.0.0 "
 
 #include <Servo.h> // 舵机控制库
 
@@ -24,7 +22,7 @@
 
 // 超声波雷达引脚（3个Trig，3个Echo）
 #define rightTrig 2 // 右雷达激发
-#define frontTrig 7 // 前雷达激发【改接线】
+#define frontTrig 7 // 前雷达激发
 #define leftTrig 4	// 左雷达激发
 
 #define rightEcho 8	 // 右侧雷达回波引脚 1
@@ -52,7 +50,9 @@ float frontDistance = 0; // 前方障碍物距离
 
 // 舵机控制变量
 Servo myServo;		 // 舵机对象
-int servoAngle = 90; // 舵机角度（范围0-180，90为中间位置）
+int servoAngle = 97; // 舵机角度（范围0-180，90为中间位置）
+int open_servo = 76; // 舵机开启角度
+int open_time = 70 ;// 舵机开启时间
 
 // 系统工作模式枚举
 enum SystemMode
@@ -77,7 +77,8 @@ enum ManualState
 ManualState manualState = MANUAL_STOP; // 手动控制状态
 bool manualSpeed = false;			   // 手动控制速度标志（f-低速短时；t-高速长时）
 
-// TODO 【调参】手动加速部分
+// 手动加速部分
+//【该计数仅供参考，实际工作中，受电池电压、轮胎磨损程度、车重、重心分布影响】
 // 高速长时=10cm~
 // 低速短时=4cm~
 #define StandardLowSpeed 100  // 低速pwm
@@ -85,7 +86,8 @@ bool manualSpeed = false;			   // 手动控制速度标志（f-低速短时；t-
 #define LongTerm 350		  // 长时间行走delay
 #define ShortTerm 200		  // 短时间行走delay
 
-#define DebugTime 1500 // 用于调试时，每个循环进行等待
+#define DebugTime 20 // 用于调试时，每个循环进行等待 20 700
+//（700ms延时，用于看终端汇报的情况，给人脑以debug方向）
 
 // 初始化函数
 void setup()
@@ -118,7 +120,7 @@ void setup()
 
 	// 初始化舵机
 	myServo.attach(SERVO_PIN);
-	myServo.write(servoAngle); // 初始位置居中
+	myServo.write(servoAngle); // 初始位置关
 
 	// 初始状态停止所有电机
 	stopMotors(50);
@@ -165,7 +167,9 @@ void handleBluetooth()
 	if (Serial.available())
 	{
 		char command = Serial.read();
-
+		 // 这个可以去掉，主要用于debug用【你无法现象，蓝牙在连接后会发送一串确认消息，参赛前我的蓝牙在我发送一个信息后就卡死闪退……后面好不容易弄好……】
+		Serial.print("你输入了：");
+		Serial.println(command);
 		// 模式切换命令
 		switch (command)
 		{
@@ -233,14 +237,14 @@ void handleBluetooth()
 				Serial.println(F("True-高速长时"));
 
 			break;
-		case 'X': // 舵机控制（0°-90°）
+		case 'X': // 舵机控制
+				  
 			if (currentMode == MODE_MANUAL_CONTROL)
 			{
-				myServo.write(20); // 转到0°
-				delay(300);		   // 停顿500ms
-
-				myServo.write(servoAngle); // 回到90°
-				Serial.println(F("Servo moved to 0 and back to 90"));
+				myServo.write(open_servo); // 转到开
+				delay(open_time);		   // 停顿
+				myServo.write(servoAngle); // 回到关
+				Serial.println(F("biu~"));
 			}
 			break;
 		}
@@ -281,125 +285,67 @@ void infraredTracking()
 	Serial.println();
 
 	// 定义速度参数
-	// TODO 速度参数得调小；也要考虑过坡的动力要求
-	const int baseSpeed = 150; // 基础速度
-	const int baseTime = 150;  // 基础时间
-	const int maxSpeed = 200;  // 最大速度
-	const int pidTime = 120;   // PID一次进行的时间
+	//  速度参数得调小；也要考虑过坡的动力要求
+	// 回复上一行，本队在实际比赛中，战略性放弃了爬坡需求；红外太低了会卡坡，改结构会导致很多额外的问题
+	//  较大的基础和较小的pid持续时间，会让你的新能源车有一种单杠内燃机车的感觉（人话：像拖拉机，突突突——突突；不过很稳）
+	const int baseSpeed = 200; // 基础速度
+	const int maxSpeed = 250;  // 最大速度
+	const int pidTime = 20;	   // PID一次进行的时间
 
-	const int correctionSpeed = 120; // 修正速度(20~30°)
-	const int correctionTime = 120;	 // 修正时长
-
-	const int turnSpeed = 180; // 转弯速度(直角弯）
-	const int turnTime = 180;
+	const int turnSpeed = 150; // 转弯速度(直角弯）
+	const int turnTime = 150;
 
 	// 定义传感器权重
-	const int weights[6] = {-20, -10, -5, 5, 10, 20}; // 各传感器的权重值
+	const double weights[6] = {-1.2, -0.8, -0.4, 0.4, 0.8, 1.2}; // 各传感器的权重值
 
 	// 计算偏差值
-	int error = 0;
-	int activeSensors = 0;
+	double error = 0;
 
-	static int lastError = 0;
-	static int integral = 0;
+	static double lastError = 0;
+	static double integral = 0;
 
 	for (int i = 0; i < 6; i++)
 	{
-		if (irValues[i] == 1) // 检测到黑线
+		if (irValues[i]) // 检测到黑线
 		{
 			error += weights[i];
-			activeSensors++;
 		}
 	}
 
-	// 状态机控制变量（新增部分）
-	static int searchState = 0; // 0: 未搜索 1: 左转 2: 右转 3: 后退
-
-	// 检测到黑线时重置搜索状态（新增关键逻辑）
-	if (activeSensors > 0)
+	if (irValues[0] && irValues[1])
 	{
-		searchState = 0;
-	}
-
-	// 处理不同情况
-	if (activeSensors == 0)
-	{
-		//  没有检测到任何黑线，左右摆，一波测试效果之后，再后退
-		if (searchState == 0)
-		{
-			// 开始搜索序列
-			searchState = 1;
-			Serial.println("No line - Searching left");
-			turnLeft(correctionSpeed, correctionTime);
-		}
-		else
-		{
-
-			switch (searchState)
-			{
-			case 1:
-
-				searchState = 2;
-
-				Serial.println("No line - Searching right");
-				turnRight(correctionSpeed, correctionTime); // 回正
-				turnRight(correctionSpeed, correctionTime); // 右转
-
-				break;
-
-			case 2: // 后退阶段
-				searchState = 3;
-				Serial.println("No line - Moving backward");
-				turnLeft(correctionSpeed, correctionTime);	   // 回正
-				moveBackward(correctionSpeed, correctionTime); // 后退第一次
-				break;
-
-			case 3: // 再后退阶段
-				searchState = 0;
-				Serial.println("No line - Moving backward");
-				moveBackward(correctionSpeed, correctionTime); // 后退第二次
-				break;
-			}
-		}
-		lastError = 0;
-		integral = 0;
-		delay(100);
-		Serial.println("完成一次意外调整");
-		return; // 退出函数，不执行后续循迹逻辑
-	}
-
-	if (irValues[0] == 1 || (irValues[1] == 1 && irValues[2] == 1))
-	{
-		// 检测到左侧传感器，可能是直角或锐角左转
+		// 检测到最左侧两个传感器，可能是直角或锐角左转
 		Serial.println("Sharp left turn detected");
 		turnLeft(turnSpeed, turnTime);
+
 		lastError = 0;
 		integral = 0;
 	}
-	else if (irValues[5] == 1 || (irValues[4] == 1 && irValues[3] == 1))
+	else if (irValues[5] && irValues[4])
 	{
 		// 检测到右侧传感器，可能是直角或锐角右转
 		Serial.println("Sharp right turn detected");
 		turnRight(turnSpeed, turnTime);
+
 		lastError = 0;
 		integral = 0;
 	}
 	else
 	{
 		// 正常循迹情况，使用PID控制
-		float kp = 0.6; // 比例系数；响应当前误差，过高导致振荡
-		float ki = 0.1; // 积分系数；累计历史误差，调高可以避免偏向一侧
-		float kd = 0.3; // 微分系数；误差变化率，增大会减小超调变笨拙
+		float kp = 0.85; // 比例系数；响应当前误差，过高导致振荡
+		float ki = 0.1;	 // 积分系数；累计历史误差，调高可以避免偏向一侧
+		float kd = 0.05; // 微分系数；误差变化率，增大会减小超调变笨拙
 
 		// 计算PID值
 		integral += error;
-		int derivative = error - lastError;
-		int correction = kp * error + ki * integral + kd * derivative;
+		double derivative = error - lastError;
+		double correction = kp * error + ki * integral + kd * derivative;
 		lastError = error;
 
 		// 应用修正
-		int leftSpeed = baseSpeed + correction;
-		int rightSpeed = baseSpeed - correction;
+		int leftSpeed = baseSpeed * (1 + correction);
+		int rightSpeed = baseSpeed * (1 - correction);
 
 		// 限制速度范围
 		leftSpeed = constrain(leftSpeed, 0, maxSpeed);
@@ -417,7 +363,7 @@ void infraredTracking()
 		stopState();
 	}
 
-	delay(30); // 控制循环频率
+	delay(10); // 控制循环频率
 }
 
 /* ========== 雷达避障功能函数（靠右侧行驶） ========== */
@@ -427,9 +373,9 @@ void infraredTracking()
  * 根据障碍物距离做出避障决策
  * 包含调试信息输出和当前决策信息显示
  */
-// 先调整雷达；问题在于转弯太大了；建议转了之后往前走
 void radarAvoidance()
 {
+
 	// 1. 读取传感器数据
 
 	leftDistance = readDistance(leftTrig, leftEcho);
@@ -437,7 +383,7 @@ void radarAvoidance()
 	rightDistance = readDistance(rightTrig, rightEcho);
 
 	// 2. 输出传感器数据和当前状态
-	Serial.print("[传感器数据] 左:");
+	Serial.print("[雷达] 左:");
 	Serial.print(leftDistance);
 	Serial.print("cm 前:");
 	Serial.print(frontDistance);
@@ -448,19 +394,24 @@ void radarAvoidance()
 	int Radarspeed[2] = {StandardHighSpeed, StandardLowSpeed}; // 0高速，1低速
 	int Radartime_use[2] = {LongTerm, ShortTerm};			   // 0高速，1低速
 
-	// TODO 【调参】雷达调优看这里
+	// 【调参】雷达调优看这里
+	// 这些超参数，能保证测试赛道正常走就行，不过可以考虑一些特殊情况
+	//		毕竟，比赛赛道往往和你的想象由很大差距(科协的小伙伴的任何一个灵机一动，都会让你调的无比牛的“先验”参数，变成过拟合~)
 	const int A_RADAR_LENGH = 50; // A探测限值；大于此值则认为有通道（转弯）
 	const int B_FRONT_HOPE = 12;  // B前进期望；大于此值则可向前走
-	const int C_RIGHT_MIN = 12;	  // C贴右最小值；小于此值则认为太靠右
+	const int C_Not_Center = 23;  // C；居中时，左右大概时17
 
-	if (frontDistance <= B_FRONT_HOPE)
+	// 建议在车身上增加防撞设施，避免雷达在车子紧贴墙壁时，雷达传回数据为0或极大；进而导致以下的决策过程出现意外
+	if ((frontDistance <= B_FRONT_HOPE) )
 	{
 		/*
 		3. 【倒退】陷入困境，当前方距离小于等于 {B前进期望} 。
 		则前方撞墙：倒退一定距离。
 		慢速后退 * 2 大概6cm：*/
+		stopMotors(100);
+		moveBackward(Radarspeed[0], Radartime_use[0]);
 		moveBackward(Radarspeed[1], Radartime_use[1]);
-		moveBackward(Radarspeed[1], Radartime_use[1]);
+		//moveBackward(Radarspeed[1], Radartime_use[1]);
 		Serial.println("[调试]3. 【倒退】陷入困境，当前方距离小于等于 {B前进期望} ");
 	}
 	else if (rightDistance > A_RADAR_LENGH)
@@ -468,23 +419,15 @@ void radarAvoidance()
 		/*
 		1. 【右转】当右边大于 {A探测限值} 。
 		则右边有通道：先向前（可以撞墙），再右转，再向前走。
-		低速前进 * 3，低速右转 * 2，高速前进 * 2；
+
 		*/
 
-		moveForward(Radarspeed[1], Radartime_use[1]);
-		turnRightSmall(Radarspeed[0], Radartime_use[0]);
-		//moveBackward(Radarspeed[1], Radartime_use[1]);
-		//turnRight(Radarspeed[1], Radartime_use[1]);
-		moveForward(Radarspeed[1], Radartime_use[1]);
-		turnLeftSmall(Radarspeed[1], Radartime_use[1]);
-		moveForward(Radarspeed[1], Radartime_use[1]);
+		moveForward(Radarspeed[0], Radartime_use[0]);
 		turnRightSmall(Radarspeed[0], Radartime_use[0]);
 		moveForward(Radarspeed[0], Radartime_use[0]);
-		turnLeftSmall(Radarspeed[1], Radartime_use[1]);
+		turnRightSmall(Radarspeed[1], Radartime_use[1]);
 		moveForward(Radarspeed[0], Radartime_use[0]);
-		//turnRightSmall(Radarspeed[0], Radartime_use[0]);
-		//moveForward(Radarspeed[0], Radartime_use[0]);
-		// moveForward(Radarspeed[0], Radartime_use[0]);
+		moveForward(Radarspeed[0], Radartime_use[0]);
 
 		Serial.println("[调试]1. 【右转】当右边大于 {A探测限值} ");
 	}
@@ -495,57 +438,83 @@ void radarAvoidance()
 		则左边有通道：先向前（可以撞墙），再左转，再向前走。
 		低速前进 * 3，慢速左转 * 2，高速前进 * 2；
 		*/
-		moveForward(Radarspeed[1], Radartime_use[1]);
-		turnLeft(Radarspeed[1], Radartime_use[1]);
-		moveBackward(Radarspeed[1], Radartime_use[1]);
-		turnLeft(Radarspeed[1], Radartime_use[1]);
-		moveForward(Radarspeed[1], Radartime_use[1]);
-		turnRightSmall(Radarspeed[1], Radartime_use[1]);
-		moveForward(Radarspeed[1], Radartime_use[1]);
+
+		moveForward(Radarspeed[0], Radartime_use[0]);
 		turnLeftSmall(Radarspeed[0], Radartime_use[0]);
 		moveForward(Radarspeed[0], Radartime_use[0]);
-		moveForward(Radarspeed[0], Radartime_use[0]);
-		moveForward(Radarspeed[0], Radartime_use[0]);
+		turnLeftSmall(Radarspeed[1], Radartime_use[1]);
 		moveForward(Radarspeed[0], Radartime_use[0]);
 
 		Serial.println("[调试]2. 【左转】当左边大于 {A探测限值} ");
 	}
-	else if (rightDistance > leftDistance)
-	{
-		/*
-		4. 【直行前进不够右】当 右侧距离大于 左侧距离。
-		则右侧不够：先右一点，再少往前一点。
-		慢小右 * 1，高速前进 * 1
-		*/
-		turnRightSmall(Radarspeed[1], Radartime_use[1]);
-		moveForward(Radarspeed[0], Radartime_use[0]);
-		turnLeftSmall(Radarspeed[1], Radartime_use[1]);
-		Serial.println("[调试]4. 【直行前进不够右】当 右侧距离大于 左侧距离 ");
-	}
-	else if (rightDistance < C_RIGHT_MIN)
-	{
-		/*
-		5. 【直行前进太靠右】当 右侧距离小于 {C贴右最小值}。
-		则右侧贴的太近：先左一点，再少往前一点，再回方向。
-		慢小左 * 1，高速前进 * 1 ，慢小右*1
-		*/
-		turnLeftSmall(Radarspeed[1], Radartime_use[1]);
-		turnLeftSmall(Radarspeed[1], Radartime_use[1]);
-		moveForward(Radarspeed[1], Radartime_use[1]);
-		turnRightSmall(Radarspeed[1], Radartime_use[1]);
-		turnRightSmall(Radarspeed[1], Radartime_use[1]);
-		Serial.println("[调试]5. 【直行前进太靠右】当 右侧距离小于 {C贴右最小值} ");
-	}
 	else
 	{
-		/*&
-		6. 【直行前进】 可以前进。
-		高速前进 * 2
-		*/
-		moveForward(Radarspeed[0], Radartime_use[0]);
-		//moveForward(Radarspeed[0], Radartime_use[0]);
-		Serial.println("[调试]6. 【直行前进】 可以前进");
+		if (leftDistance > C_Not_Center)
+		{
+			// 过于偏右
+			moveBackward(Radarspeed[1], Radartime_use[1]);
+			stopState();
+			delay(100);
+			turnLeftSmall(Radarspeed[1], Radartime_use[1]);
+			turnLeftSmall(Radarspeed[1], Radartime_use[1]);
+			moveForward(Radarspeed[1], Radartime_use[1]);
+			turnRightSmall(Radarspeed[1], Radartime_use[1]);
+			moveForward(Radarspeed[1], Radartime_use[1]);
+
+			Serial.println("过于右偏");
+		}
+		else if (rightDistance > C_Not_Center)
+		{
+			// 过于偏左
+			moveBackward(Radarspeed[1], Radartime_use[1]);
+
+			stopState();
+			delay(100);
+			turnRightSmall(Radarspeed[1], Radartime_use[1]);
+
+			turnRightSmall(Radarspeed[1], Radartime_use[1]);
+
+			moveForward(Radarspeed[1], Radartime_use[1]);
+
+			turnLeftSmall(Radarspeed[1], Radartime_use[1]);
+
+			moveForward(Radarspeed[1], Radartime_use[1]);
+
+			Serial.println("过于左偏");
+		}
+
+		if (leftDistance < rightDistance)
+		{
+			// 已经靠左偏
+
+			turnRightSmall(Radarspeed[1], Radartime_use[1]);
+
+			moveForward(Radarspeed[1], Radartime_use[1]);
+
+			turnLeftSmall(Radarspeed[1], Radartime_use[1]);
+
+			moveForward(Radarspeed[1], Radartime_use[1]);
+
+			Serial.println("已经靠左偏");
+		}
+		else
+		{
+			// 已经靠右偏
+
+			turnLeftSmall(Radarspeed[1], Radartime_use[1]);
+
+			moveForward(Radarspeed[1], Radartime_use[1]);
+
+			turnRightSmall(Radarspeed[1], Radartime_use[1]);
+
+			moveForward(Radarspeed[1], Radartime_use[1]);
+
+			Serial.println("已经靠右偏");
+		}
+
+		delay(100);
 	}
+	delay(20);
 }
 
 // 手动控制功能函数
@@ -594,12 +563,12 @@ float readDistance(int trigPin, int echoPin)
 	delayMicroseconds(10);
 	digitalWrite(trigPin, LOW);
 
-	// 测量回波脉冲宽度（添加超时时间6ms，约100cm）
-	long duration = pulseIn(echoPin, HIGH, 6000);
+	// 测量回波脉冲宽度（添加超时时间10ms，约178cm）
+	long duration = pulseIn(echoPin, HIGH, 10000);
 
 	if (duration == 0)
 	{
-		return 150.0; // 测量范围是0~110+；若为150.0则认为无穷大
+		return 200.0; // 测量范围是0~110+；若为200.0则认为无穷大
 	}
 
 	// 计算距离（声速340m/s，除以2因为是往返距离）
